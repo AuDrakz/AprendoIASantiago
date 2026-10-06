@@ -61,6 +61,12 @@ class AprendoIaViewModel(
         filtro.value = nuevoFiltro
     }
 
+    fun actualizarPerfil(nombreUsuario: String, email: String) {
+        viewModelScope.launch {
+            repositorio.actualizarPerfil(nombreUsuario, email)
+        }
+    }
+
     /**
      * Procesa un QR leído. Corre en una corrutina porque Room no permite
      * acceder a la base de datos desde el hilo principal.

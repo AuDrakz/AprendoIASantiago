@@ -57,6 +57,17 @@ class PuntoRepository(
         }
     }
 
+    suspend fun actualizarPerfil(nombreUsuario: String, email: String) {
+        perfilDao.guardar(
+            PerfilEntity(
+                id = 1,
+                nombreUsuario = nombreUsuario.trim(),
+                email = email.trim()
+            )
+        )
+    }
+
+
     /**
      * Valida el código QR contra la base de datos.
      * Si es de un punto nuevo, lo marca como visitado.

@@ -18,27 +18,49 @@ import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.viewmodel.AprendoIaViewModel
 
 @Composable
-fun PerfilRankingScreen(viewModel: AprendoIaViewModel) {
+fun PerfilRankingScreen(
+    viewModel: AprendoIaViewModel,
+    onEditarPerfil: () -> Unit
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    PerfilRankingContent(perfil = uiState.perfil, ranking = uiState.ranking)
+
+    PerfilRankingContent(
+        perfil = uiState.perfil,
+        ranking = uiState.ranking,
+        onEditarPerfil = onEditarPerfil
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PerfilRankingContent(
     perfil: PerfilUsuario,
-    ranking: List<EntradaRanking>
+    ranking: List<EntradaRanking>,
+    onEditarPerfil: () -> Unit
 ) {
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text("Perfil y ranking") }) }
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("Perfil y ranking")
+                }
+            )
+        }
     ) { innerPadding ->
+
         LazyColumn(
             modifier = Modifier.padding(innerPadding),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item { TarjetaResumen(perfil) }
+
+            item {
+                TarjetaResumen(
+                    perfil = perfil,
+                    onEditarPerfil = onEditarPerfil
+                )
+            }
 
             item {
                 Text(
@@ -48,66 +70,138 @@ fun PerfilRankingContent(
                 )
             }
 
-            itemsIndexed(ranking, key = { _, entrada -> entrada.nombre }) { indice, entrada ->
-                FilaRanking(posicion = indice + 1, entrada = entrada)
+            itemsIndexed(
+                ranking,
+                key = { _, entrada ->
+                    entrada.nombre
+                }
+            ) { indice, entrada ->
+
+                FilaRanking(
+                    posicion = indice + 1,
+                    entrada = entrada
+                )
             }
         }
     }
 }
 
-/** Resumen del usuario: nombre, email y sus dos métricas. */
 @Composable
-private fun TarjetaResumen(perfil: PerfilUsuario) {
+private fun TarjetaResumen(
+    perfil: PerfilUsuario,
+    onEditarPerfil: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor =
+                MaterialTheme.colorScheme.primaryContainer
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(perfil.nombreUsuario, style = MaterialTheme.typography.headlineSmall)
-            Text(perfil.email, style = MaterialTheme.typography.bodyMedium)
 
-            Spacer(Modifier.height(16.dp))
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+
+            Text(
+                perfil.nombreUsuario,
+                style = MaterialTheme.typography.headlineSmall
+            )
+
+            Text(
+                perfil.email,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(
+                Modifier.height(16.dp)
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Metrica(valor = perfil.puntosTotales, etiqueta = "Puntos")
-                Metrica(valor = perfil.lugaresDescubiertos, etiqueta = "Lugares")
+
+                Metrica(
+                    valor = perfil.puntosTotales,
+                    etiqueta = "Puntos"
+                )
+
+                Metrica(
+                    valor = perfil.lugaresDescubiertos,
+                    etiqueta = "Lugares"
+                )
+            }
+
+            Spacer(
+                Modifier.height(16.dp)
+            )
+
+            OutlinedButton(
+                onClick = onEditarPerfil,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Editar perfil")
             }
         }
     }
 }
 
 @Composable
-private fun Metrica(valor: Int, etiqueta: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("$valor", style = MaterialTheme.typography.headlineMedium)
-        Text(etiqueta, style = MaterialTheme.typography.labelLarge)
+private fun Metrica(
+    valor: Int,
+    etiqueta: String
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Text(
+            "$valor",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Text(
+            etiqueta,
+            style = MaterialTheme.typography.labelLarge
+        )
     }
 }
 
-/** Fila del ranking; resalta al usuario actual. */
 @Composable
-private fun FilaRanking(posicion: Int, entrada: EntradaRanking) {
+private fun FilaRanking(
+    posicion: Int,
+    entrada: EntradaRanking
+) {
     ListItem(
-        modifier = Modifier.clip(RoundedCornerShape(12.dp)),
+        modifier = Modifier.clip(
+            RoundedCornerShape(12.dp)
+        ),
         leadingContent = {
-            Text("$posicion", style = MaterialTheme.typography.titleLarge)
+            Text(
+                "$posicion",
+                style = MaterialTheme.typography.titleLarge
+            )
         },
         headlineContent = {
             Text(
                 text = entrada.nombre,
-                fontWeight = if (entrada.esUsuarioActual) FontWeight.Bold else FontWeight.Normal
+                fontWeight =
+                    if (entrada.esUsuarioActual)
+                        FontWeight.Bold
+                    else
+                        FontWeight.Normal
             )
         },
-        trailingContent = { Text("${entrada.puntos} pts") },
+        trailingContent = {
+            Text("${entrada.puntos} pts")
+        },
         colors = ListItemDefaults.colors(
-            containerColor = if (entrada.esUsuarioActual)
-                MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceVariant
+            containerColor =
+                if (entrada.esUsuarioActual)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.surfaceVariant
         )
     )
 }
