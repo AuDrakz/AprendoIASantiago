@@ -73,7 +73,7 @@ fun PerfilRankingContent(
             itemsIndexed(
                 ranking,
                 key = { _, entrada ->
-                    entrada.nombre
+                    if (entrada.esUsuarioActual) "usuario_actual" else "base_${entrada.nombre}"
                 }
             ) { indice, entrada ->
 
