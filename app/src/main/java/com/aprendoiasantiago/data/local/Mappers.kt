@@ -1,6 +1,7 @@
 package com.aprendoiasantiago.data.local
 
 import com.aprendoiasantiago.model.PuntoInteres
+import com.aprendoiasantiago.model.EntradaRanking
 
 // Convierten entre la tabla (Entity) y el modelo que usa la UI.
 
@@ -26,4 +27,9 @@ fun PuntoInteres.toEntity() = PuntoEntity(
     puntosRecompensa = puntosRecompensa,
     urlVideo = urlVideo,
     fueVisitado = fueVisitado
+)
+
+fun RankingEntity.toModel() = EntradaRanking(
+    nombre = nombre,
+    puntos = puntos
 )

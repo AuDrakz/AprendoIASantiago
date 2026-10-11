@@ -10,14 +10,15 @@ import androidx.room.RoomDatabase
  * (por eso el patrón singleton del companion object).
  */
 @Database(
-    entities = [PuntoEntity::class, PerfilEntity::class],
-    version = 1,
+    entities = [PuntoEntity::class, PerfilEntity::class, RankingEntity::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun puntoDao(): PuntoDao
     abstract fun perfilDao(): PerfilDao
+    abstract fun rankingDao(): RankingDao
 
     companion object {
         @Volatile
@@ -29,7 +30,10 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "aprendoia.db"
-                ).build().also { instancia = it }
+                )
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .build()
+                    .also { instancia = it }
             }
     }
 }
