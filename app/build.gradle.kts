@@ -64,7 +64,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    implementation("androidx.compose.material3:material3-window-size-class:1.4.0")
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
+    implementation(libs.androidx.compose.material3.window.size)
+    implementation(libs.osmdroid.android)
 
 }
