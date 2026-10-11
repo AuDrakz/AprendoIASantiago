@@ -16,6 +16,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.viewmodel.PerfilViewModel
+import androidx.compose.ui.res.stringResource
+import com.aprendoiasantiago.R
 
 @Composable
 fun PerfilRankingScreen(
@@ -43,7 +45,7 @@ fun PerfilRankingContent(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Perfil y ranking")
+                    Text(stringResource(R.string.perfil_titulo))
                 }
             )
         }
@@ -64,7 +66,7 @@ fun PerfilRankingContent(
 
             item {
                 Text(
-                    text = "Ranking",
+                    stringResource(R.string.perfil_ranking),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -124,12 +126,12 @@ private fun TarjetaResumen(
 
                 Metrica(
                     valor = perfil.puntosTotales,
-                    etiqueta = "Puntos"
+                    stringResource(R.string.perfil_metrica_puntos)
                 )
 
                 Metrica(
                     valor = perfil.lugaresDescubiertos,
-                    etiqueta = "Lugares"
+                    stringResource(R.string.perfil_metrica_lugares)
                 )
             }
 
@@ -141,7 +143,7 @@ private fun TarjetaResumen(
                 onClick = onEditarPerfil,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Editar perfil")
+                Text(stringResource(R.string.editar_perfil))
             }
         }
     }
@@ -194,7 +196,7 @@ private fun FilaRanking(
             )
         },
         trailingContent = {
-            Text("${entrada.puntos} pts")
+            Text(stringResource(R.string.ranking_pts, entrada.puntos))
         },
         colors = ListItemDefaults.colors(
             containerColor =

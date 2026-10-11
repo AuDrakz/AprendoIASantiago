@@ -1,7 +1,7 @@
 package com.aprendoiasantiago.ui.screens
 
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,8 +24,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aprendoiasantiago.model.PuntoInteres
+import com.aprendoiasantiago.R
+
 
 /**
  * Detalle de un punto: concepto de IA y acceso a su cápsula de video.
@@ -43,10 +46,10 @@ fun DetalleVideoScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
-                title = { Text("Cápsula de IA") },
+                title = { Text(stringResource(R.string.detalle_titulo)) },
                 navigationIcon = {
                     IconButton(onClick = onVolver) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.volver))
                     }
                 }
             )
@@ -59,7 +62,7 @@ fun DetalleVideoScreen(
                     .padding(innerPadding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No se encontró el punto")
+                Text(stringResource(R.string.detalle_no_encontrado))
             }
         } else {
             Column(
@@ -81,7 +84,7 @@ fun DetalleVideoScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "+${punto.puntosRecompensa} puntos",
+                            stringResource(R.string.puntos_recompensa, punto.puntosRecompensa),
                             style = MaterialTheme.typography.labelLarge
                         )
                     }
@@ -92,13 +95,13 @@ fun DetalleVideoScreen(
                         // Abre el video en la app que corresponda (navegador, YouTube...)
                         runCatching {
                             contexto.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(punto.urlVideo))
+                                Intent(Intent.ACTION_VIEW, punto.urlVideo.toUri())
                             )
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Ver cápsula de video")
+                    Text(stringResource(R.string.detalle_ver_video))
                 }
             }
         }

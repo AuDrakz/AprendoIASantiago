@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.aprendoiasantiago.model.PuntoInteres
+import androidx.compose.ui.res.stringResource
+import com.aprendoiasantiago.R
 
 /**
  * Tarjeta reutilizable de un punto de interés (stateless):
@@ -48,7 +50,7 @@ fun TarjetaPunto(
 
             Spacer(Modifier.height(8.dp))
             Text(
-                text = "+${punto.puntosRecompensa} puntos",
+                text = stringResource(R.string.puntos_recompensa, punto.puntosRecompensa),
                 style = MaterialTheme.typography.labelLarge
             )
 
@@ -59,7 +61,7 @@ fun TarjetaPunto(
                     onClick = onEscanearClick,
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text("Escanear QR")
+                    Text(stringResource(R.string.tarjeta_escanear))
                 }
             }
         }
@@ -87,7 +89,7 @@ private fun BadgeEstado(visitado: Boolean) {
             )
             Spacer(Modifier.width(4.dp))
             Text(
-                text = if (visitado) "Visitado" else "Pendiente",
+                text = if (visitado) stringResource(R.string.tarjeta_visitado) else stringResource(R.string.tarjeta_pendiente),
                 style = MaterialTheme.typography.labelMedium
             )
         }

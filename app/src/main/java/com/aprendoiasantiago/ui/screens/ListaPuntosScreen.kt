@@ -14,6 +14,8 @@ import com.aprendoiasantiago.model.PuntoInteres
 import com.aprendoiasantiago.ui.components.TarjetaPunto
 import com.aprendoiasantiago.viewmodel.PuntosViewModel
 import com.aprendoiasantiago.viewmodel.FiltroPuntos
+import androidx.compose.ui.res.stringResource
+import com.aprendoiasantiago.R
 
 /** Versión "stateful": única que conoce el ViewModel. */
 @Composable
@@ -43,7 +45,7 @@ fun ListaPuntosContent(
 ) {
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text("Puntos de interés") }) }
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.lista_titulo)) }) }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
 
@@ -58,7 +60,7 @@ fun ListaPuntosContent(
                     FilterChip(
                         selected = filtro == filtroActual,
                         onClick = { onFiltroChange(filtro) },
-                        label = { Text(filtro.etiqueta) }
+                        label = { Text(stringResource(filtro.etiqueta)) }
                     )
                 }
             }
@@ -66,7 +68,7 @@ fun ListaPuntosContent(
             if (puntos.isEmpty()) {
                 // Estado vacío (ej. filtro "Visitados" sin ninguno aún)
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay puntos en esta categoría")
+                    Text(stringResource(R.string.lista_vacia))
                 }
             } else {
                 LazyColumn(

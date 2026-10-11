@@ -27,6 +27,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aprendoiasantiago.model.PerfilUsuario
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.res.stringResource
+import com.aprendoiasantiago.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,16 +53,21 @@ fun EditarPerfilScreen(
         mutableStateOf<String?>(null)
     }
 
+    val errNombreObligatorio = stringResource(R.string.error_nombre_obligatorio)
+    val errNombreMin = stringResource(R.string.error_nombre_min)
+    val errNombreMax = stringResource(R.string.error_nombre_max)
+    val errCorreoObligatorio = stringResource(R.string.error_correo_obligatorio)
+    val errCorreoInvalido = stringResource(R.string.error_correo_invalido)
     fun validarNombre(valor: String): String? {
         return when {
             valor.isBlank() ->
-                "El nombre es obligatorio"
+                errNombreObligatorio
 
             valor.trim().length < 3 ->
-                "Mínimo 3 caracteres"
+                errNombreMin
 
             valor.trim().length > 30 ->
-                "Máximo 30 caracteres"
+                errNombreMax
 
             else -> null
         }
@@ -69,12 +76,12 @@ fun EditarPerfilScreen(
     fun validarEmail(valor: String): String? {
         return when {
             valor.isBlank() ->
-                "El correo es obligatorio"
+                errCorreoObligatorio
 
             !android.util.Patterns.EMAIL_ADDRESS
                 .matcher(valor.trim())
                 .matches() ->
-                "Ingresa un correo válido"
+                errCorreoInvalido
 
             else -> null
         }
@@ -96,7 +103,7 @@ fun EditarPerfilScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Editar perfil")
+                    Text(stringResource(R.string.editar_perfil))
                 },
                 navigationIcon = {
                     IconButton(
@@ -104,7 +111,7 @@ fun EditarPerfilScreen(
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = stringResource(R.string.volver)
                         )
                     }
                 }
@@ -127,7 +134,7 @@ fun EditarPerfilScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 label = {
-                    Text("Nombre de usuario")
+                    Text(stringResource(R.string.editar_nombre_label))
                 },
                 isError = errorNombre != null,
                 supportingText = {
@@ -145,7 +152,7 @@ fun EditarPerfilScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 label = {
-                    Text("Correo electrónico")
+                    Text(stringResource(R.string.editar_correo_label))
                 },
                 isError = errorEmail != null,
                 supportingText = {
@@ -169,7 +176,7 @@ fun EditarPerfilScreen(
                     vertical = 14.dp
                 )
             ) {
-                Text("Guardar cambios")
+                Text(stringResource(R.string.editar_guardar))
             }
         }
     }

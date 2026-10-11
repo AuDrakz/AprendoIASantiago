@@ -1,12 +1,14 @@
 package com.aprendoiasantiago.viewmodel
 
 import com.aprendoiasantiago.model.PuntoInteres
+import androidx.annotation.StringRes
+import com.aprendoiasantiago.R
 
 /** Opciones de los FilterChips de la lista. */
-enum class FiltroPuntos(val etiqueta: String) {
-    TODOS("Todos"),
-    PENDIENTES("Pendientes"),
-    VISITADOS("Visitados")
+enum class FiltroPuntos(@param:StringRes val etiqueta: Int) {
+    TODOS(R.string.filtro_todos),
+    PENDIENTES(R.string.filtro_pendientes),
+    VISITADOS(R.string.filtro_visitados)
 }
 
 /** Estado de las pantallas que muestran puntos (lista, mapa y detalles) */

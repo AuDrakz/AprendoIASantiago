@@ -24,6 +24,8 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import androidx.compose.ui.res.stringResource
+import com.aprendoiasantiago.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +77,7 @@ fun MapaScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Mapa de puntos")
+                    Text(stringResource(R.string.mapa_titulo))
                 }
             )
         }
@@ -113,9 +115,7 @@ fun MapaScreen(
                             Arrangement.spacedBy(12.dp)
                     ) {
 
-                        Text(
-                            "Activa el permiso de ubicación " +
-                                    "para mostrar tu posición."
+                        Text(stringResource(R.string.mapa_permiso_texto)
                         )
 
                         Button(
@@ -128,7 +128,7 @@ fun MapaScreen(
                                 )
                             }
                         ) {
-                            Text("Permitir ubicación")
+                            Text(stringResource(R.string.mapa_permiso_boton))
                         }
                     }
                 }
@@ -148,10 +148,7 @@ fun MapaScreen(
             },
 
             text = {
-                Text(
-                    "Concepto de IA: ${punto.conceptoIA}\n" +
-                            "Recompensa: ${punto.puntosRecompensa} puntos"
-                )
+                Text(stringResource(R.string.mapa_dialogo_detalle, punto.conceptoIA, punto.puntosRecompensa))
             },
 
             confirmButton = {
@@ -160,7 +157,7 @@ fun MapaScreen(
                         puntoSeleccionado = null
                     }
                 ) {
-                    Text("Cerrar")
+                    Text(stringResource(R.string.mapa_dialogo_cerrar))
                 }
             }
         )
