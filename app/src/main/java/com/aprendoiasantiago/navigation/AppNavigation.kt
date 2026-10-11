@@ -1,5 +1,6 @@
 package com.aprendoiasantiago.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,10 +40,12 @@ import com.aprendoiasantiago.ui.screens.QrScannerScreen
 import com.aprendoiasantiago.viewmodel.EscanerViewModel
 import com.aprendoiasantiago.viewmodel.PerfilViewModel
 import com.aprendoiasantiago.viewmodel.PuntosViewModel
+import androidx.compose.ui.res.stringResource
+import com.aprendoiasantiago.R
 
 private data class ItemBarra(
     val screen: Screen,
-    val etiqueta: String,
+    @param: StringRes val etiqueta: Int,
     val icono: ImageVector
 )
 
@@ -50,25 +53,25 @@ private val itemsBarra = listOf(
 
     ItemBarra(
         Screen.ListaPuntos,
-        "Puntos",
+        R.string.nav_puntos,
         Icons.AutoMirrored.Filled.List
     ),
 
     ItemBarra(
         Screen.Mapa,
-        "Mapa",
+        R.string.nav_mapa,
         Icons.Filled.Place
     ),
 
     ItemBarra(
         Screen.ScannerQR,
-        "Escáner",
+        R.string.nav_escaner,
         Icons.Filled.Search
     ),
 
     ItemBarra(
         Screen.Perfil,
-        "Perfil",
+        R.string.nav_perfil,
         Icons.Filled.Person
     )
 )
@@ -139,12 +142,12 @@ fun AppNavigation(
                             Icon(
                                 item.icono,
                                 contentDescription =
-                                    item.etiqueta
+                                    stringResource(item.etiqueta)
                             )
                         },
 
                         label = {
-                            Text(item.etiqueta)
+                            Text(stringResource(item.etiqueta))
                         }
                     )
                 }
@@ -184,12 +187,12 @@ fun AppNavigation(
                                 Icon(
                                     item.icono,
                                     contentDescription =
-                                        item.etiqueta
+                                        stringResource(item.etiqueta)
                                 )
                             },
 
                             label = {
-                                Text(item.etiqueta)
+                                Text(stringResource(item.etiqueta))
                             }
                         )
                     }

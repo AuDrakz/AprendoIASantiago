@@ -52,6 +52,9 @@ import com.google.mlkit.vision.barcode.common.Barcode
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.aprendoiasantiago.R
+import androidx.compose.ui.platform.LocalResources
 
 /**
  * Versión "stateful": maneja el permiso de cámara y valida cada QR
@@ -63,6 +66,7 @@ fun QrScannerScreen(
     onVerVideo: (Int) -> Unit
 ) {
     val contexto = LocalContext.current
+    val recursos = LocalResources.current
     val alcance = rememberCoroutineScope()
 
     // ¿Ya tenemos permiso de cámara?
@@ -77,7 +81,8 @@ fun QrScannerScreen(
         ActivityResultContracts.RequestPermission()
     ) { concedido -> permisoConcedido = concedido }
 
-    var mensaje by remember { mutableStateOf("Apunta la cámara al código QR del lugar") }
+    val instruccion = stringResource(R.string.escaner_instruccion)
+    var mensaje by remember { mutableStateOf(instruccion) }
     // Evita procesar el mismo QR decenas de veces por segundo
     var procesando by remember { mutableStateOf(false) }
 
@@ -104,13 +109,13 @@ fun QrScannerScreen(
                 viewModel.escanearCodigoQR(codigo) { resultado ->
                     when (resultado) {
                         is ResultadoEscaneo.Exito -> {
-                            mensaje = "¡+${resultado.punto.puntosRecompensa} puntos en ${resultado.punto.titulo}!"
+                            mensaje = recursos.getString(R.string.escaner_exito, resultado.punto.puntosRecompensa, resultado.punto.titulo)
                             onVerVideo(resultado.punto.id)
                         }
                         is ResultadoEscaneo.YaVisitado ->
-                            mensaje = "Ya visitaste ${resultado.punto.titulo}"
+                            mensaje = recursos.getString(R.string.escaner_ya_visitado, resultado.punto.titulo)
                         ResultadoEscaneo.Invalido ->
-                            mensaje = "Este código QR no pertenece a la app"
+                            mensaje = recursos.getString(R.string.escaner_invalido)
                     }
                     // Pausa de 2 segundos antes de aceptar otra lectura
                     alcance.launch {
@@ -135,7 +140,7 @@ fun QrScannerContent(
 ) {
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text("Escáner QR") }) }
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.escaner_titulo)) }) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -171,11 +176,11 @@ fun QrScannerContent(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Necesitamos acceso a la cámara para leer los códigos QR",
+                        text = stringResource(R.string.escaner_permiso_texto),
                         textAlign = TextAlign.Center
                     )
-                    Button(onClick = onPedirPermiso) { Text("Dar permiso") }
-                    OutlinedButton(onClick = onAbrirAjustes) { Text("Abrir ajustes de la app") }
+                    Button(onClick = onPedirPermiso) { Text(stringResource(R.string.escaner_permiso_boton)) }
+                    OutlinedButton(onClick = onAbrirAjustes) { Text(stringResource(R.string.escaner_ajustes_boton)) }
                 }
             }
         }
