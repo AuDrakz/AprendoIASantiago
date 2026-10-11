@@ -4,13 +4,6 @@ import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.model.PuntoInteres
 
-/** Opciones de los FilterChips de la lista. */
-enum class FiltroPuntos(val etiqueta: String) {
-    TODOS("Todos"),
-    PENDIENTES("Pendientes"),
-    VISITADOS("Visitados")
-}
-
 /**
  * Estado completo de la UI en un único objeto inmutable.
  * Los valores derivados (lista filtrada, ranking ordenado) se calculan
