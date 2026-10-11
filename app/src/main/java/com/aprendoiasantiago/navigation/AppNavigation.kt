@@ -87,18 +87,9 @@ fun AppNavigation(
 
     val irAPestana: (String) -> Unit =
         { ruta ->
-
             navController.navigate(ruta) {
-
-                popUpTo(
-                    navController.graph.startDestinationId
-                ) {
-                    saveState = true
-                }
-
+                popUpTo(navController.graph.startDestinationId)
                 launchSingleTop = true
-
-                restoreState = true
             }
         }
 
