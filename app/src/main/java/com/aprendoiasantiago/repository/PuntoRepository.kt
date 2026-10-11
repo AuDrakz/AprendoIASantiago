@@ -90,11 +90,16 @@ class PuntoRepository(
      */
     suspend fun registrarVisita(codigoQR: String): ResultadoEscaneo {
         val entidad = puntoDao.buscarPorQr(codigoQR) ?: return ResultadoEscaneo.Invalido
-        if (entidad.fueVisitado) return ResultadoEscaneo.YaVisitado(entidad.toModel())
 
-        val actualizado = entidad.copy(fueVisitado = true)
-        puntoDao.actualizar(actualizado)
-        return ResultadoEscaneo.Exito(actualizado.toModel())
+        val filasActualizadas = puntoDao.marcarVisitado(entidad.id)
+        val punto = entidad.copy(fueVisitado = true).toModel()
+
+        return if (filasActualizadas > 0) {
+            ResultadoEscaneo.Exito(punto)
+        } else {
+            ResultadoEscaneo.YaVisitado(punto)
+        }
+
     }
 
     private companion object {

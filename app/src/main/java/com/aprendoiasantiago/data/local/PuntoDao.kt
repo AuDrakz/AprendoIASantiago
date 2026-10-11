@@ -21,6 +21,9 @@ interface PuntoDao {
     @Query("SELECT * FROM puntos WHERE codigoQR = :codigo LIMIT 1")
     suspend fun buscarPorQr(codigo: String): PuntoEntity?
 
+    @Query("UPDATE puntos SET fueVisitado = 1 WHERE id = :id AND fueVisitado = 0")
+    suspend fun marcarVisitado(id: Int): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarTodos(puntos: List<PuntoEntity>)
 
