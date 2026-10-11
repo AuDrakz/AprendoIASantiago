@@ -3,7 +3,6 @@ package com.aprendoiasantiago.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.repository.PuntoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,13 +20,6 @@ class AprendoIaViewModel(
     // Lo único que vive solo en memoria: el filtro elegido en pantalla
     private val filtro = MutableStateFlow(FiltroPuntos.TODOS)
 
-    // Datos de prueba hasta que lleguen desde la API (Fase 6)
-    private val rankingBase = listOf(
-        EntradaRanking("Camila R.", 450),
-        EntradaRanking("Matías P.", 300),
-        EntradaRanking("Valentina S.", 150)
-    )
-
     /**
      * Junta perfil + puntos (desde Room) + filtro en un solo estado.
      * Cuando Room cambia, este estado se recalcula solo.
@@ -35,8 +27,9 @@ class AprendoIaViewModel(
     val uiState: StateFlow<AprendoIaUiState> = combine(
         repositorio.perfil,
         repositorio.puntos,
+        repositorio.rankingBase,
         filtro
-    ) { perfil, puntos, filtroActual ->
+    ) { perfil, puntos, rankingBase, filtroActual ->
         AprendoIaUiState(
             perfil = perfil,
             puntos = puntos,

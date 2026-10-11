@@ -11,12 +11,11 @@ import com.aprendoiasantiago.navigation.AppNavigation
 import com.aprendoiasantiago.repository.PuntoRepository
 import com.aprendoiasantiago.ui.theme.AprendoIASantiagoTheme
 import com.aprendoiasantiago.viewmodel.AprendoIaViewModel
-
 class MainActivity : ComponentActivity() {
 
     private val repositorio by lazy {
         val baseDeDatos = AppDatabase.obtener(applicationContext)
-        PuntoRepository(baseDeDatos.puntoDao(), baseDeDatos.perfilDao())
+        PuntoRepository(baseDeDatos.puntoDao(), baseDeDatos.perfilDao(), baseDeDatos.rankingDao())
     }
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)

@@ -3,8 +3,11 @@ package com.aprendoiasantiago.repository
 import com.aprendoiasantiago.data.local.PerfilDao
 import com.aprendoiasantiago.data.local.PerfilEntity
 import com.aprendoiasantiago.data.local.PuntoDao
+import com.aprendoiasantiago.data.local.RankingDao
+import com.aprendoiasantiago.data.local.RankingEntity
 import com.aprendoiasantiago.data.local.toEntity
 import com.aprendoiasantiago.data.local.toModel
+import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.model.PuntoInteres
 import com.aprendoiasantiago.model.ResultadoEscaneo
@@ -20,12 +23,16 @@ import kotlinx.coroutines.flow.map
  */
 class PuntoRepository(
     private val puntoDao: PuntoDao,
-    private val perfilDao: PerfilDao
+    private val perfilDao: PerfilDao,
+    private val rankingDao: RankingDao
 ) {
 
     /** Lista de puntos, siempre actualizada. */
     val puntos: Flow<List<PuntoInteres>> =
         puntoDao.observarPuntos().map { lista -> lista.map { it.toModel() } }
+
+    val rankingBase: Flow<List<EntradaRanking>> =
+        rankingDao.observarRanking().map {lista -> lista.map { it.toModel() }}
 
     /**
      * Perfil completo. Los puntos y lugares se CALCULAN a partir de los
@@ -53,6 +60,15 @@ class PuntoRepository(
         if (perfilDao.contar() == 0) {
             perfilDao.guardar(
                 PerfilEntity(PERFIL_ID, "EstudianteIA", "estudiante@duoc.cl")
+            )
+        }
+        if (rankingDao.contar() == 0) {
+            rankingDao.insertarTodos(
+                listOf(
+                    RankingEntity(nombre = "Camila R.", puntos = 450),
+                    RankingEntity(nombre = "Matias R.", puntos = 300),
+                    RankingEntity(nombre = "Valentina S.", puntos = 150),
+                )
             )
         }
     }
