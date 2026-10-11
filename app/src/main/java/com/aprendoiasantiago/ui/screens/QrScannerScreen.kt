@@ -45,11 +45,12 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aprendoiasantiago.model.ResultadoEscaneo
-import com.aprendoiasantiago.viewmodel.AprendoIaViewModel
+import com.aprendoiasantiago.viewmodel.EscanerViewModel
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.launch
 
 /**
@@ -58,7 +59,7 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun QrScannerScreen(
-    viewModel: AprendoIaViewModel,
+    viewModel: EscanerViewModel,
     onVerVideo: (Int) -> Unit
 ) {
     val contexto = LocalContext.current
@@ -113,7 +114,7 @@ fun QrScannerScreen(
                     }
                     // Pausa de 2 segundos antes de aceptar otra lectura
                     alcance.launch {
-                        delay(2000)
+                        delay(2.seconds)
                         procesando = false
                     }
                 }

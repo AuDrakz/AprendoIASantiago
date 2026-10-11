@@ -10,7 +10,10 @@ import com.aprendoiasantiago.data.local.AppDatabase
 import com.aprendoiasantiago.navigation.AppNavigation
 import com.aprendoiasantiago.repository.PuntoRepository
 import com.aprendoiasantiago.ui.theme.AprendoIASantiagoTheme
-import com.aprendoiasantiago.viewmodel.AprendoIaViewModel
+import com.aprendoiasantiago.viewmodel.AprendoIaViewModelFactory
+import com.aprendoiasantiago.viewmodel.EscanerViewModel
+import com.aprendoiasantiago.viewmodel.PerfilViewModel
+import com.aprendoiasantiago.viewmodel.PuntosViewModel
 class MainActivity : ComponentActivity() {
 
     private val repositorio by lazy {
@@ -25,12 +28,15 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AprendoIASantiagoTheme {
-                val viewModel: AprendoIaViewModel = viewModel(
-                    factory = AprendoIaViewModel.Factory(repositorio)
-                )
+                val fabrica = AprendoIaViewModelFactory(repositorio)
+                val puntosViewModel: PuntosViewModel = viewModel(factory = fabrica)
+                val perfilViewModel: PerfilViewModel = viewModel(factory = fabrica)
+                val escanerViewModel: EscanerViewModel = viewModel(factory = fabrica)
 
                 AppNavigation(
-                    viewModel = viewModel,
+                    puntosViewModel = puntosViewModel,
+                    perfilViewModel = perfilViewModel,
+                    escanerViewModel = escanerViewModel,
                     windowSizeClass =
                         androidx.compose.material3.windowsizeclass
                             .calculateWindowSizeClass(this@MainActivity)

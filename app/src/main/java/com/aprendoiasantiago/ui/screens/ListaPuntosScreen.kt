@@ -12,13 +12,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aprendoiasantiago.model.PuntoInteres
 import com.aprendoiasantiago.ui.components.TarjetaPunto
-import com.aprendoiasantiago.viewmodel.AprendoIaViewModel
+import com.aprendoiasantiago.viewmodel.PuntosViewModel
 import com.aprendoiasantiago.viewmodel.FiltroPuntos
 
 /** Versión "stateful": única que conoce el ViewModel. */
 @Composable
 fun ListaPuntosScreen(
-    viewModel: AprendoIaViewModel,
+    viewModel: PuntosViewModel,
     onIrAEscaner: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

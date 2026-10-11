@@ -15,11 +15,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
-import com.aprendoiasantiago.viewmodel.AprendoIaViewModel
+import com.aprendoiasantiago.viewmodel.PerfilViewModel
 
 @Composable
 fun PerfilRankingScreen(
-    viewModel: AprendoIaViewModel,
+    viewModel: PerfilViewModel,
     onEditarPerfil: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
