@@ -36,7 +36,9 @@ import com.aprendoiasantiago.ui.screens.ListaPuntosScreen
 import com.aprendoiasantiago.ui.screens.MapaScreen
 import com.aprendoiasantiago.ui.screens.PerfilRankingScreen
 import com.aprendoiasantiago.ui.screens.QrScannerScreen
-import com.aprendoiasantiago.viewmodel.AprendoIaViewModel
+import com.aprendoiasantiago.viewmodel.EscanerViewModel
+import com.aprendoiasantiago.viewmodel.PerfilViewModel
+import com.aprendoiasantiago.viewmodel.PuntosViewModel
 
 private data class ItemBarra(
     val screen: Screen,
@@ -73,7 +75,9 @@ private val itemsBarra = listOf(
 
 @Composable
 fun AppNavigation(
-    viewModel: AprendoIaViewModel,
+    puntosViewModel: PuntosViewModel,
+    perfilViewModel: PerfilViewModel,
+    escanerViewModel: EscanerViewModel,
     windowSizeClass: WindowSizeClass
 ) {
     val navController =
@@ -99,7 +103,9 @@ fun AppNavigation(
 
             AppNavHost(
                 navController = navController,
-                viewModel = viewModel,
+                puntosViewModel = puntosViewModel,
+                perfilViewModel = perfilViewModel,
+                escanerViewModel = escanerViewModel,
                 modifier = modifier
             )
         }
@@ -206,7 +212,9 @@ fun AppNavigation(
 @Composable
 private fun AppNavHost(
     navController: NavHostController,
-    viewModel: AprendoIaViewModel,
+    puntosViewModel: PuntosViewModel,
+    perfilViewModel: PerfilViewModel,
+    escanerViewModel: EscanerViewModel,
     modifier: Modifier
 ) {
 
@@ -227,7 +235,7 @@ private fun AppNavHost(
 
             ListaPuntosScreen(
 
-                viewModel = viewModel,
+                viewModel = puntosViewModel,
 
                 onIrAEscaner = {
                     navController.navigate(
@@ -242,7 +250,7 @@ private fun AppNavHost(
         ) {
 
             MapaScreen(
-                viewModel
+                puntosViewModel
             )
         }
 
@@ -252,7 +260,7 @@ private fun AppNavHost(
 
             QrScannerScreen(
 
-                viewModel = viewModel,
+                viewModel = escanerViewModel,
 
                 onVerVideo = { puntoId ->
 
@@ -287,7 +295,7 @@ private fun AppNavHost(
                 )
 
             val uiState by
-            viewModel.uiState
+            puntosViewModel.uiState
                 .collectAsStateWithLifecycle()
 
             DetalleVideoScreen(
@@ -309,7 +317,7 @@ private fun AppNavHost(
 
             PerfilRankingScreen(
 
-                viewModel = viewModel,
+                viewModel = perfilViewModel,
 
                 onEditarPerfil = {
                     navController.navigate(
@@ -324,7 +332,7 @@ private fun AppNavHost(
         ) {
 
             val uiState by
-            viewModel.uiState
+            perfilViewModel.uiState
                 .collectAsStateWithLifecycle()
 
             EditarPerfilScreen(
@@ -333,7 +341,7 @@ private fun AppNavHost(
 
                 onGuardar = { nombre, email ->
 
-                    viewModel.actualizarPerfil(
+                    perfilViewModel.actualizarPerfil(
                         nombre,
                         email
                     )
