@@ -10,6 +10,7 @@ import com.aprendoiasantiago.data.local.toModel
 import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.model.PuntoInteres
+import com.aprendoiasantiago.model.Rol
 import com.aprendoiasantiago.model.ResultadoEscaneo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -47,6 +48,8 @@ class PuntoRepository(
             id = perfilGuardado.id,
             nombreUsuario = perfilGuardado.nombreUsuario,
             email = perfilGuardado.email,
+            rol = perfilGuardado.rol,
+            fotoRuta = perfilGuardado.fotoRuta,
             puntosTotales = visitados.sumOf { it.puntosRecompensa },
             lugaresDescubiertos = visitados.size
         )
@@ -73,13 +76,9 @@ class PuntoRepository(
         }
     }
 
-    suspend fun actualizarPerfil(nombreUsuario: String, email: String) {
+    suspend fun actualizarPerfil(nombreUsuario: String, email: String, rol: Rol, fotoRuta: String?) {
         perfilDao.guardar(
-            PerfilEntity(
-                id = 1,
-                nombreUsuario = nombreUsuario.trim(),
-                email = email.trim()
-            )
+            PerfilEntity(PERFIL_ID, nombreUsuario.trim(), email.trim(), rol, fotoRuta)
         )
     }
 

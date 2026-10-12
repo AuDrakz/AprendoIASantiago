@@ -2,6 +2,7 @@ package com.aprendoiasantiago.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprendoiasantiago.model.Rol
 import com.aprendoiasantiago.repository.PuntoRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -9,7 +10,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class PerfilViewModel (
+class PerfilViewModel(
     private val repositorio: PuntoRepository
 ) : ViewModel() {
 
@@ -24,9 +25,9 @@ class PerfilViewModel (
         initialValue = PerfilUiState()
     )
 
-    fun actualizarPerfil(nombreUsuario: String, email: String) {
+    fun actualizarPerfil(nombreUsuario: String, email: String, rol: Rol, fotoRuta: String?) {
         viewModelScope.launch {
-            repositorio.actualizarPerfil(nombreUsuario,email)
+            repositorio.actualizarPerfil(nombreUsuario, email, rol, fotoRuta)
         }
     }
 }

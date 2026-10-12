@@ -346,7 +346,9 @@ private fun AppNavHost(
 
                     perfilViewModel.actualizarPerfil(
                         nombre,
-                        email
+                        email,
+                        uiState.perfil.rol,
+                        uiState.perfil.fotoRuta
                     )
 
                     navController.popBackStack()
