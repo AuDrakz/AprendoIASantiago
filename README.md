@@ -27,10 +27,31 @@ app/src/main/java/com/aprendoiasantiago/
 ├── data/local/     Entidades, DAOs y base de datos Room
 ├── model/          Modelos de dominio
 ├── repository/     Repositorio (fuente única de datos)
-├── viewmodel/      ViewModel y estado de la UI
+├── viewmodel/      ViewModels y estados de la UI
 ├── navigation/     Rutas y navegación
 └── ui/             Pantallas, componentes y tema
 ```
+
+## Arquitectura
+El flujo de datos es: Room → DAO → Repositorio → ViewModel → estado de UI → pantalla.
+Las pantallas no hablan con la base de datos, solo observan el estado del ViewModel.
+
+| ViewModel | Pantallas | Responsabilidad |
+|---|---|---|
+| `PuntosViewModel` | Lista, mapa y detalle | Puntos y filtro. Es el único que siembra los datos iniciales. |
+| `PerfilViewModel` | Perfil, edición y ranking | Perfil del usuario y ranking. |
+| `EscanerViewModel` | Escáner QR | Validación del QR y registro de visitas. |
+
+Los tres se crean una sola vez en `MainActivity` con `AprendoIaViewModelFactory`
+y se pasan por parámetro a la navegación.
+
+## Base de datos
+Room (SQLite) con tres tablas: `puntos`, `perfil` y `ranking` (datos ficticios).
+El registro de una visita es atómico: solo se suman puntos si el punto
+todavía no estaba visitado, aunque se escanee dos veces seguidas.
+
+Durante el desarrollo, si se cambia una entidad hay que subir `version` en
+`AppDatabase`. La base se recrea con `fallbackToDestructiveMigration`.
 
 ## Cómo ejecutarla
 1. Clonar el repositorio y abrirlo con Android Studio.
@@ -42,11 +63,17 @@ app/src/main/java/com/aprendoiasantiago/
 - Lista de puntos de interés con filtros (todos, pendientes y visitados).
 - Mapa con la ubicación del usuario y los puntos marcados.
 - Escáner de códigos QR que valida el punto y suma los puntos de recompensa.
+- Registro de visitas con validación de QR repetido.
 - Detalle de cada punto con acceso a su video.
 - Perfil editable con validación de formulario.
-- Ranking de estudiantes guardado en la base de datos local.
+- Ranking de estudiantes (datos ficticios) guardado en la base de datos local.
 
 Probada en teléfono físico.
+
+## Convenciones del equipo
+- Una rama por funcionalidad (`feature/...`) y Pull Request hacia `master`.
+- Los textos de la interfaz van en `strings.xml`, no escritos en el código.
+- `.idea/` y las claves de firma (`*.jks`, `*.keystore`) no se suben al repositorio.
 
 ## En desarrollo
 - Foto de perfil y selfie de validación (cámara y galería).
