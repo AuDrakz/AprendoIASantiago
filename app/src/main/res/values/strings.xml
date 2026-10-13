@@ -1,7 +1,5 @@
-
 <resources>
     <string name="app_name">AprendoIASantiago</string>
-
     <!-- Navegación -->
     <string name="nav_puntos">Puntos</string>
     <string name="nav_mapa">Mapa</string>
@@ -24,19 +22,14 @@
     <string name="tarjeta_visitado">Visitado</string>
     <string name="tarjeta_pendiente">Pendiente</string>
 
-    <!-- Mapa (Nuevos campos del Paquete C agregados) -->
+    <!-- Mapa -->
     <string name="mapa_titulo">Mapa de puntos</string>
     <string name="mapa_permiso_texto">Activa el permiso de ubicación para mostrar tu posición.</string>
     <string name="mapa_permiso_boton">Permitir ubicación</string>
     <string name="mapa_dialogo_detalle">Concepto de IA: %1$s\nRecompensa: %2$d puntos</string>
     <string name="mapa_dialogo_cerrar">Cerrar</string>
-    <string name="marker_visited">Punto Visitado</string>
-    <string name="marker_pending">Punto Pendiente</string>
-    <string name="marker_mi_posicion">Tu posición actual</string>
-    <string name="mapa_distancia">Distancia al punto: %.1f m</string>
-    <string name="btn_ver_detalle">Ver Detalle</string>
 
-    <!-- Escáner (Validación de cercanía y altitud para Paquete C) -->
+    <!-- Escáner -->
     <string name="escaner_titulo">Escáner QR</string>
     <string name="escaner_instruccion">Apunta la cámara al código QR del lugar</string>
     <string name="escaner_exito">¡+%1$d puntos en %2$s!</string>
@@ -45,8 +38,6 @@
     <string name="escaner_permiso_texto">Necesitamos acceso a la cámara para leer los códigos QR</string>
     <string name="escaner_permiso_boton">Dar permiso</string>
     <string name="escaner_ajustes_boton">Abrir ajustes de la app</string>
-    <string name="escaner_error_lejos">Debes estar a menos de 50m del punto para validar los puntos.</string>
-    <string name="escaner_procesando">Procesando código QR en segundo plano...</string>
 
     <!-- Detalle de video -->
     <string name="detalle_titulo">Cápsula de IA</string>
@@ -70,8 +61,4 @@
     <string name="error_nombre_max">Máximo 30 caracteres</string>
     <string name="error_correo_obligatorio">El correo es obligatorio</string>
     <string name="error_correo_invalido">Ingresa un correo válido</string>
-
-    <!-- Servicio de Ubicación en Segundo Plano -->
-    <string name="service_notification_title">Rastreo de ubicación activo</string>
-    <string name="service_notification_text">Verificando puntos de interés cercanos...</string>
 </resources>
