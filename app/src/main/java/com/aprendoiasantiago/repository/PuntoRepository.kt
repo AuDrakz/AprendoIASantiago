@@ -5,8 +5,8 @@ import com.aprendoiasantiago.data.local.PerfilEntity
 import com.aprendoiasantiago.data.local.PuntoDao
 import com.aprendoiasantiago.data.local.RankingDao
 import com.aprendoiasantiago.data.local.RankingEntity
-import com.aprendoiasantiago.data.local.toEntity
-import com.aprendoiasantiago.data.local.toModel
+import com.aprendoiasantiago.service.toEntity
+import com.aprendoiasantiago.service.toModel
 import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.model.PuntoInteres
