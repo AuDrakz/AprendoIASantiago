@@ -60,18 +60,14 @@ Durante el desarrollo, si se cambia una entidad hay que subir `version` en
    El escáner QR necesita cámara y permiso para usarla.
 
 ## Funcionalidades actuales
-
 - Lista de puntos de interés con filtros (todos, pendientes y visitados).
-- Mapa de OpenStreetMap (OSMDroid) centrado en la posición del usuario con caché de tiles para mala conexión.
-- Marcadores visuales distintos para puntos visitados y pendientes.
-- Diálogo informativo en marcadores con detalles y cálculo en metros de la distancia al punto.
-- Escáner de código QR ejecutado en hilo secundario (`Dispatchers.Default`) para no bloquear la interfaz.
-- Validación de cercanía: exige estar a menos de 50 metros del punto para otorgar la recompensa.
-- Guardado local en Room de la altitud y timestamp (fecha/hora) de cada visita.
-- Servicio de ubicación en segundo plano (`Foreground Service`) con permisos independientes.
-- Reproducción de video de cápsulas de IA integrada dentro de la app con ExoPlayer.
+- Mapa con la ubicación del usuario y los puntos marcados.
+- Escáner de códigos QR que valida el punto y suma los puntos de recompensa.
+- Registro de visitas con validación de QR repetido.
+- Detalle de cada punto con acceso a su video.
 - Perfil editable con validación de formulario.
-- Ranking de estudiantes guardado en base de datos local.
+- Ranking de estudiantes (datos ficticios) guardado en la base de datos local.
+
 Probada en teléfono físico.
 
 ## Convenciones del equipo
@@ -80,9 +76,7 @@ Probada en teléfono físico.
 - `.idea/` y las claves de firma (`*.jks`, `*.keystore`) no se suben al repositorio.
 
 ## En desarrollo
-
-- Notificaciones automáticas de cercanía a puntos pendientes de visita.
-- Optimización avanzada de descarga de mapas sin conexión por áreas.
 - Foto de perfil y selfie de validación (cámara y galería).
 - Perfiles de usuario: cliente, generador de contenido y administrador.
+- Animaciones y tema de alto contraste.
 - Pruebas unitarias.
