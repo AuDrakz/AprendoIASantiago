@@ -18,5 +18,6 @@ data class PuntoEntity(
     val codigoQR: String,
     val puntosRecompensa: Int,
     val urlVideo: String,
-    val fueVisitado: Boolean = false
+    val fueVisitado: Boolean = false,
+    val selfieRuta: String? = null
 )

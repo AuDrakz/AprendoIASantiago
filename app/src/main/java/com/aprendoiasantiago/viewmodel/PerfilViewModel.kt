@@ -78,13 +78,6 @@ class PerfilViewModel(
         }
     }
 
-    // Se mantiene hasta el paso 4 (AppNavigation aún lo usa).
-    fun actualizarPerfil(nombreUsuario: String, email: String, rol: Rol, fotoRuta: String?) {
-        viewModelScope.launch {
-            repositorio.actualizarPerfil(nombreUsuario, email, rol, fotoRuta)
-        }
-    }
-
     private fun errorNombre(valor: String): Int? = when {
         valor.isBlank() -> R.string.error_nombre_obligatorio
         valor.trim().length < 3 -> R.string.error_nombre_min

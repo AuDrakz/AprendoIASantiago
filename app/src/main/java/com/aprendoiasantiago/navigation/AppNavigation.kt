@@ -37,6 +37,7 @@ import com.aprendoiasantiago.ui.screens.ListaPuntosScreen
 import com.aprendoiasantiago.ui.screens.MapaScreen
 import com.aprendoiasantiago.ui.screens.PerfilRankingScreen
 import com.aprendoiasantiago.ui.screens.QrScannerScreen
+import com.aprendoiasantiago.ui.screens.RegistroScreen
 import com.aprendoiasantiago.viewmodel.EscanerViewModel
 import com.aprendoiasantiago.viewmodel.PerfilViewModel
 import com.aprendoiasantiago.viewmodel.PuntosViewModel
@@ -310,53 +311,33 @@ private fun AppNavHost(
 
                 onVolver = {
                     navController.popBackStack()
-                }
-            )
-        }
-
-        composable(
-            Screen.Perfil.route
-        ) {
-
-            PerfilRankingScreen(
-
-                viewModel = perfilViewModel,
-
-                onEditarPerfil = {
-                    navController.navigate(
-                        Screen.EditarPerfil.route
-                    )
-                }
-            )
-        }
-
-        composable(
-            Screen.EditarPerfil.route
-        ) {
-
-            val uiState by
-            perfilViewModel.uiState
-                .collectAsStateWithLifecycle()
-
-            EditarPerfilScreen(
-
-                perfil = uiState.perfil,
-
-                onGuardar = { nombre, email ->
-
-                    perfilViewModel.actualizarPerfil(
-                        nombre,
-                        email,
-                        uiState.perfil.rol,
-                        uiState.perfil.fotoRuta
-                    )
-
-                    navController.popBackStack()
                 },
 
-                onVolver = {
-                    navController.popBackStack()
+                onSelfie = { ruta ->
+                    puntoId?.let { puntosViewModel.guardarSelfie(it, ruta) }
                 }
+            )
+        }
+
+        composable(Screen.Perfil.route) {
+            PerfilRankingScreen(
+                viewModel = perfilViewModel,
+                onEditarPerfil = { navController.navigate(Screen.EditarPerfil.route) },
+                onRegistro = { navController.navigate(Screen.Registro.route) }
+            )
+        }
+
+        composable(Screen.EditarPerfil.route) {
+            EditarPerfilScreen(
+                viewModel = perfilViewModel,
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Registro.route) {
+            RegistroScreen(
+                viewModel = perfilViewModel,
+                onVolver = { navController.popBackStack() }
             )
         }
     }

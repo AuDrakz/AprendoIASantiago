@@ -82,6 +82,8 @@ class PuntoRepository(
         )
     }
 
+    suspend fun guardarSelfie(puntoId: Int, ruta: String) =
+        puntoDao.guardarSelfie(puntoId, ruta)
 
     /**
      * Valida el código QR contra la base de datos.

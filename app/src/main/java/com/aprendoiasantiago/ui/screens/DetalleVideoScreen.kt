@@ -1,7 +1,6 @@
 package com.aprendoiasantiago.ui.screens
 
 import android.content.Intent
-import androidx.core.net.toUri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +8,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
@@ -25,20 +26,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.aprendoiasantiago.model.PuntoInteres
+import androidx.core.net.toUri
 import com.aprendoiasantiago.R
-
+import com.aprendoiasantiago.model.PuntoInteres
+import com.aprendoiasantiago.ui.components.ImagenInteligente
+import com.aprendoiasantiago.ui.components.SelectorFoto
 
 /**
- * Detalle de un punto: concepto de IA y acceso a su cápsula de video.
+ * Detalle de un punto: concepto de IA, cápsula de video y selfie de validación.
  * Recibe el punto ya buscado (puede ser null si el id no existe).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalleVideoScreen(
     punto: PuntoInteres?,
-    onVolver: () -> Unit
+    onVolver: () -> Unit,
+    onSelfie: (String) -> Unit
 ) {
     val contexto = LocalContext.current
 
@@ -69,6 +74,7 @@ fun DetalleVideoScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -102,6 +108,41 @@ fun DetalleVideoScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(stringResource(R.string.detalle_ver_video))
+                }
+
+                // Selfie de validación: solo si el punto ya fue visitado
+                if (punto.fueVisitado) {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                stringResource(R.string.selfie_titulo),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            if (punto.selfieRuta == null) {
+                                Text(
+                                    stringResource(R.string.selfie_descripcion),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            ImagenInteligente(
+                                ruta = punto.selfieRuta,
+                                tamano = 120.dp,
+                                descripcion = stringResource(R.string.selfie_titulo)
+                            )
+                            SelectorFoto(
+                                onFotoLista = onSelfie,
+                                textoCamara = R.string.selfie_tomar,
+                                permitirGaleria = false
+                            )
+                        }
+                    }
                 }
             }
         }

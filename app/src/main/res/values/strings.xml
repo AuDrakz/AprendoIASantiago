@@ -80,5 +80,6 @@
     <string name="foto_permiso_denegado">Se necesita permiso de cámara para tomar la foto</string>
     <string name="selfie_titulo">Selfie de validación</string>
     <string name="selfie_tomar">Tomar selfie</string>
+    <string name="selfie_descripcion">Toma una selfie para validar tu visita</string>
 
 </resources>
