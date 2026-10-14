@@ -20,6 +20,7 @@ artificial y suman puntos en un ranking.
 - Navigation Compose con diseño adaptable (barra inferior / riel lateral)
 - CameraX + ML Kit para escanear códigos QR
 - osmdroid para el mapa
+- Coil para mostrar las fotos de perfil y de validación
 
 ## Estructura del proyecto
 ```
@@ -67,6 +68,10 @@ Durante el desarrollo, si se cambia una entidad hay que subir `version` en
 - Detalle de cada punto con acceso a su video.
 - Perfil editable con validación de formulario.
 - Ranking de estudiantes (datos ficticios) guardado en la base de datos local.
+- Registro de usuario con rol: cliente, generador de contenido o administrador.
+- Formulario con validación en el ViewModel (nombre y correo).
+- Foto de perfil desde cámara o galería, guardada en Room y mostrada en el perfil.
+- Selfie de validación al visitar un punto, guardada junto al punto en Room.
 
 Probada en teléfono físico.
 
@@ -76,7 +81,5 @@ Probada en teléfono físico.
 - `.idea/` y las claves de firma (`*.jks`, `*.keystore`) no se suben al repositorio.
 
 ## En desarrollo
-- Foto de perfil y selfie de validación (cámara y galería).
-- Perfiles de usuario: cliente, generador de contenido y administrador.
 - Animaciones y tema de alto contraste.
 - Pruebas unitarias.
