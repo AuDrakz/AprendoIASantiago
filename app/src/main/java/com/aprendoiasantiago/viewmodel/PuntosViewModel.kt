@@ -37,4 +37,8 @@ class PuntosViewModel (
     fun cambiarFiltro(nuevoFiltro: FiltroPuntos) {
         filtro.value = nuevoFiltro
     }
+
+    fun guardarSelfie(puntoId: Int, ruta: String) {
+        viewModelScope.launch { repositorio.guardarSelfie(puntoId, ruta) }
+    }
 }

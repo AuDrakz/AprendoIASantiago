@@ -2,15 +2,17 @@ package com.aprendoiasantiago.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.aprendoiasantiago.model.Rol
 
 /**
- * Tabla "perfil". Solo guarda los datos fijos del usuario.
- * Los puntos totales y lugares descubiertos se calculan desde la
- * tabla "puntos", así nunca quedan desincronizados.
+ * Tabla "perfil". Guarda los datos fijos del usuario, su rol y la ruta de su foto.
+ * Los puntos y lugares se calculan desde la tabla "puntos".
  */
 @Entity(tableName = "perfil")
 data class PerfilEntity(
     @PrimaryKey val id: Int,
     val nombreUsuario: String,
-    val email: String
+    val email: String,
+    val rol: Rol = Rol.CLIENTE,
+    val fotoRuta: String? = null
 )

@@ -7,6 +7,8 @@ data class PerfilUsuario(
     val id: Int,
     val nombreUsuario: String,
     val email: String,
+    val rol: Rol = Rol.CLIENTE,
+    val fotoRuta: String? = null,
     val puntosTotales: Int = 0,
     val lugaresDescubiertos: Int = 0
 )
