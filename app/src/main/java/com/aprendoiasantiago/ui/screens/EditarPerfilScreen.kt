@@ -13,14 +13,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aprendoiasantiago.R
 import com.aprendoiasantiago.ui.components.FormularioPerfil
+import com.aprendoiasantiago.ui.components.LiberarFormularioAlSalir
 import com.aprendoiasantiago.viewmodel.PerfilViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,15 +28,11 @@ fun EditarPerfilScreen(
     onVolver: () -> Unit
 ) {
     val estado by viewModel.formulario.collectAsStateWithLifecycle()
+    val perfil = viewModel.uiState.collectAsStateWithLifecycle().value.perfil
 
-    // Precarga una sola vez (no se repite al rotar la pantalla)
-    var iniciado by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        if (!iniciado) {
-            viewModel.cargarFormulario(viewModel.uiState.value.perfil)
-            iniciado = true
-        }
-    }
+    // Precarga cuando Room entrega el perfil (el ViewModel ignora llamadas repetidas)
+    LaunchedEffect(perfil.id) { viewModel.cargarFormulario(perfil) }
+    LiberarFormularioAlSalir(viewModel::cerrarFormulario)
 
     Scaffold(
         topBar = {

@@ -4,11 +4,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aprendoiasantiago.R
 import com.aprendoiasantiago.ui.components.FormularioPerfil
+import com.aprendoiasantiago.ui.components.LiberarFormularioAlSalir
 import com.aprendoiasantiago.viewmodel.PerfilViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,14 +33,28 @@ fun RegistroScreen(
     onVolver: () -> Unit
 ) {
     val estado by viewModel.formulario.collectAsStateWithLifecycle()
+    var confirmando by rememberSaveable { mutableStateOf(false) }
 
-    // Formulario vacío una sola vez (no se repite al rotar la pantalla)
-    var iniciado by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        if (!iniciado) {
-            viewModel.limpiarFormulario()
-            iniciado = true
-        }
+    LaunchedEffect(Unit) { viewModel.limpiarFormulario() }
+    LiberarFormularioAlSalir(viewModel::cerrarFormulario)
+
+    if (confirmando) {
+        AlertDialog(
+            onDismissRequest = { confirmando = false },
+            title = { Text(stringResource(R.string.registro_confirmar_titulo)) },
+            text = { Text(stringResource(R.string.registro_confirmar_texto)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmando = false
+                    viewModel.guardarFormulario(onVolver)
+                }) { Text(stringResource(R.string.registro_confirmar_si)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmando = false }) {
+                    Text(stringResource(R.string.registro_confirmar_no))
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -62,7 +79,8 @@ fun RegistroScreen(
             onEmail = viewModel::onEmailCambia,
             onRol = viewModel::onRolCambia,
             onFoto = viewModel::onFotoCambia,
-            onGuardar = { viewModel.guardarFormulario(onVolver) },
+            // Valida primero; solo si es válido pide confirmación
+            onGuardar = { if (viewModel.validarFormulario()) confirmando = true },
             modifier = Modifier.fillMaxSize().padding(innerPadding)
         )
     }

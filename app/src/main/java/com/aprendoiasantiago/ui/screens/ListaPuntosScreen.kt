@@ -8,20 +8,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aprendoiasantiago.R
 import com.aprendoiasantiago.model.PuntoInteres
 import com.aprendoiasantiago.ui.components.TarjetaPunto
-import com.aprendoiasantiago.viewmodel.PuntosViewModel
 import com.aprendoiasantiago.viewmodel.FiltroPuntos
-import androidx.compose.ui.res.stringResource
-import com.aprendoiasantiago.R
+import com.aprendoiasantiago.viewmodel.PuntosViewModel
 
 /** Versión "stateful": única que conoce el ViewModel. */
 @Composable
 fun ListaPuntosScreen(
     viewModel: PuntosViewModel,
-    onIrAEscaner: () -> Unit
+    onIrAEscaner: () -> Unit,
+    onVerDetalle: (Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -29,8 +30,8 @@ fun ListaPuntosScreen(
         puntos = uiState.puntosFiltrados,
         filtroActual = uiState.filtro,
         onFiltroChange = viewModel::cambiarFiltro,
-        // Ya no simula: lleva al escáner con la cámara real
-        onEscanearClick = { onIrAEscaner() }
+        onEscanearClick = { onIrAEscaner() },
+        onVerDetalleClick = { punto -> onVerDetalle(punto.id) }
     )
 }
 
@@ -41,7 +42,8 @@ fun ListaPuntosContent(
     puntos: List<PuntoInteres>,
     filtroActual: FiltroPuntos,
     onFiltroChange: (FiltroPuntos) -> Unit,
-    onEscanearClick: (PuntoInteres) -> Unit
+    onEscanearClick: (PuntoInteres) -> Unit,
+    onVerDetalleClick: (PuntoInteres) -> Unit
 ) {
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -80,6 +82,7 @@ fun ListaPuntosContent(
                         TarjetaPunto(
                             punto = punto,
                             onEscanearClick = { onEscanearClick(punto) },
+                            onVerDetalleClick = { onVerDetalleClick(punto) },
                             // Anima entradas, salidas y reordenamientos
                             modifier = Modifier.animateItem()
                         )

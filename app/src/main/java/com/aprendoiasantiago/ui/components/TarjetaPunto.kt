@@ -23,6 +23,7 @@ import com.aprendoiasantiago.R
 fun TarjetaPunto(
     punto: PuntoInteres,
     onEscanearClick: () -> Unit,
+    onVerDetalleClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val visitado = punto.fueVisitado
@@ -54,15 +55,17 @@ fun TarjetaPunto(
                 style = MaterialTheme.typography.labelLarge
             )
 
-            // El botón solo aparece si el punto aún no se visita
-            if (!visitado) {
-                Spacer(Modifier.height(12.dp))
-                FilledTonalButton(
-                    onClick = onEscanearClick,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text(stringResource(R.string.tarjeta_escanear))
-                }
+            // Pendiente: escanear. Visitado: volver a ver la cápsula y la selfie
+            Spacer(Modifier.height(12.dp))
+            FilledTonalButton(
+                onClick = if (visitado) onVerDetalleClick else onEscanearClick,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    stringResource(
+                        if (visitado) R.string.tarjeta_ver_detalle else R.string.tarjeta_escanear
+                    )
+                )
             }
         }
     }
@@ -105,7 +108,8 @@ private fun TarjetaPuntoPreview() {
                 1, "Palacio de La Moneda", "Visión por Computador",
                 -33.4429, -70.6539, "QR_LAMONEDA_01", 100, ""
             ),
-            onEscanearClick = {}
+            onEscanearClick = {},
+            onVerDetalleClick = {}
         )
     }
 }

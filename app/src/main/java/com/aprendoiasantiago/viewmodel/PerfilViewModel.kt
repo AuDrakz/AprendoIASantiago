@@ -35,8 +35,13 @@ class PerfilViewModel(
     private val _formulario = MutableStateFlow(FormularioUiState())
     val formulario: StateFlow<FormularioUiState> = _formulario.asStateFlow()
 
-    /** Para editar: precarga el formulario con el perfil actual. */
+    // Vive en memoria del ViewModel: sobrevive a rotaciones y se reinicia si Android cierra el proceso
+    private var formularioCargado = false
+
+    /** Para editar: precarga el formulario una sola vez por visita. */
     fun cargarFormulario(perfil: PerfilUsuario) {
+        if (formularioCargado || perfil.id == 0) return // id 0 = Room aún no entrega el perfil
+        formularioCargado = true
         _formulario.value = FormularioUiState(
             nombre = perfil.nombreUsuario,
             email = perfil.email,
@@ -45,9 +50,16 @@ class PerfilViewModel(
         )
     }
 
-    /** Para registrar: formulario vacío. */
+    /** Para registrar: formulario vacío, una sola vez por visita. */
     fun limpiarFormulario() {
+        if (formularioCargado) return
+        formularioCargado = true
         _formulario.value = FormularioUiState()
+    }
+
+    /** Al salir de la pantalla (no al rotar) libera el formulario para la próxima visita. */
+    fun cerrarFormulario() {
+        formularioCargado = false
     }
 
     fun onNombreCambia(valor: String) =

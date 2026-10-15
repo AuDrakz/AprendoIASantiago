@@ -245,6 +245,12 @@ private fun AppNavHost(
                     navController.navigate(
                         Screen.ScannerQR.route
                     )
+                },
+
+                onVerDetalle = { puntoId ->
+                    navController.navigate(
+                        Screen.DetalleVideo.crearRuta(puntoId)
+                    )
                 }
             )
         }
