@@ -27,6 +27,9 @@ interface PuntoDao {
     @Query("UPDATE puntos SET selfieRuta = :ruta WHERE id = :id")
     suspend fun guardarSelfie(id: Int, ruta: String)
 
+    @Query("SELECT selfieRuta FROM puntos WHERE id = :id")
+    suspend fun selfieActual(id: Int): String?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarTodos(puntos: List<PuntoEntity>)
 

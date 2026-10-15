@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -27,11 +28,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.aprendoiasantiago.R
 import com.aprendoiasantiago.util.ArchivosFoto
-import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Botones para tomar una foto (TakePicture) o elegirla de la galería (GetContent).
- * Entrega la ruta del archivo guardado por onFotoLista.
+ * Entrega la ruta del archivo ya optimizado por onFotoLista.
  */
 @Composable
 fun SelectorFoto(
@@ -41,10 +44,19 @@ fun SelectorFoto(
     permitirGaleria: Boolean = true
 ) {
     val contexto = LocalContext.current
+    val scope = rememberCoroutineScope()
     val alFotoLista by rememberUpdatedState(onFotoLista)
     // Sobrevive a rotaciones mientras la cámara está abierta
     var rutaPendiente by rememberSaveable { mutableStateOf<String?>(null) }
     var mensaje by remember { mutableStateOf<Int?>(null) }
+
+    /** Procesa la imagen en segundo plano; null = imagen inválida. */
+    fun procesar(bloque: () -> String?) {
+        scope.launch {
+            val ruta = withContext(Dispatchers.IO) { bloque() }
+            if (ruta != null) alFotoLista(ruta) else mensaje = R.string.foto_invalida
+        }
+    }
 
     val camara = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
@@ -52,9 +64,9 @@ fun SelectorFoto(
         val ruta = rutaPendiente
         rutaPendiente = null
         if (exito && ruta != null) {
-            alFotoLista(ruta)
+            procesar { ArchivosFoto.optimizar(ruta) }
         } else {
-            ruta?.let { File(it).delete() } // cancelado: borra el archivo vacío
+            ArchivosFoto.borrar(ruta) // cancelado: borra el archivo vacío
             mensaje = R.string.foto_cancelada
         }
     }
@@ -74,8 +86,8 @@ fun SelectorFoto(
     val galeria = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri ->
-        val ruta = uri?.let { ArchivosFoto.copiar(contexto, it) }
-        if (ruta != null) alFotoLista(ruta) else mensaje = R.string.foto_cancelada
+        if (uri == null) mensaje = R.string.foto_cancelada
+        else procesar { ArchivosFoto.copiar(contexto, uri) }
     }
 
     Column(

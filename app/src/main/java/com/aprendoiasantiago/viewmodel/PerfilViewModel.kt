@@ -1,12 +1,13 @@
 package com.aprendoiasantiago.viewmodel
 
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprendoiasantiago.R
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.model.Rol
 import com.aprendoiasantiago.repository.PuntoRepository
+import com.aprendoiasantiago.util.ArchivosFoto
+import com.aprendoiasantiago.util.Validaciones
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -57,7 +58,14 @@ class PerfilViewModel(
 
     fun onRolCambia(valor: Rol) = _formulario.update { it.copy(rol = valor) }
 
-    fun onFotoCambia(ruta: String?) = _formulario.update { it.copy(fotoRuta = ruta) }
+    fun onFotoCambia(ruta: String?) {
+        val anterior = _formulario.value.fotoRuta
+        // Borra la foto anterior solo si era un borrador (no la que ya está guardada en Room)
+        if (anterior != null && anterior != uiState.value.perfil.fotoRuta) {
+            ArchivosFoto.borrar(anterior)
+        }
+        _formulario.update { it.copy(fotoRuta = ruta) }
+    }
 
     /** Valida todos los campos y publica los errores. true si todo es válido. */
     fun validarFormulario(): Boolean {
@@ -87,7 +95,7 @@ class PerfilViewModel(
 
     private fun errorEmail(valor: String): Int? = when {
         valor.isBlank() -> R.string.error_correo_obligatorio
-        !Patterns.EMAIL_ADDRESS.matcher(valor.trim()).matches() -> R.string.error_correo_invalido
+        !Validaciones.emailValido(valor) -> R.string.error_correo_invalido
         else -> null
     }
 }

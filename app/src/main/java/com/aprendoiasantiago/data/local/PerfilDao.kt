@@ -15,6 +15,9 @@ interface PerfilDao {
     @Query("SELECT COUNT(*) FROM perfil")
     suspend fun contar(): Int
 
+    @Query("SELECT fotoRuta FROM perfil WHERE id = :id")
+    suspend fun fotoActual(id: Int): String?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun guardar(perfil: PerfilEntity)
 }
