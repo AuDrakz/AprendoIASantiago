@@ -1,6 +1,5 @@
 package com.aprendoiasantiago.ui.screens
 
-
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,6 +11,11 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.mlkit.vision.MlKitAnalyzer
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,26 +43,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.aprendoiasantiago.R
 import com.aprendoiasantiago.model.ResultadoEscaneo
 import com.aprendoiasantiago.viewmodel.EscanerViewModel
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import kotlinx.coroutines.delay
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.launch
-import androidx.compose.ui.res.stringResource
-import com.aprendoiasantiago.R
-import androidx.compose.ui.platform.LocalResources
+import kotlin.time.Duration.Companion.seconds
 
 /**
- * Versión "stateful": maneja el permiso de cámara y valida cada QR
- * con el ViewModel. Si el QR es nuevo, navega al detalle del video.
+ * Versión "stateful": maneja el permiso de cámara y valida cada QR con el ViewModel.
+ * Si el QR es exitoso, muestra la animación de +100 puntos ANTES de navegar al video.
  */
 @Composable
 fun QrScannerScreen(
@@ -69,24 +74,24 @@ fun QrScannerScreen(
     val recursos = LocalResources.current
     val alcance = rememberCoroutineScope()
 
-    // ¿Ya tenemos permiso de cámara?
     var permisoConcedido by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(contexto, Manifest.permission.CAMERA) ==
                     PackageManager.PERMISSION_GRANTED
         )
     }
-    // Lanzador del cuadro "¿Permitir usar la cámara?"
+
     val lanzadorPermiso = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { concedido -> permisoConcedido = concedido }
 
     val instruccion = stringResource(R.string.escaner_instruccion)
     var mensaje by remember { mutableStateOf(instruccion) }
-    // Evita procesar el mismo QR decenas de veces por segundo
     var procesando by remember { mutableStateOf(false) }
 
-    // Al abrir la pantalla, si falta el permiso, lo pide
+    // Estado para controlar cuándo mostrar la tarjeta con la animación AnimatedVisibility
+    var mostrarBannerExito by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         if (!permisoConcedido) lanzadorPermiso.launch(Manifest.permission.CAMERA)
     }
@@ -94,9 +99,9 @@ fun QrScannerScreen(
     QrScannerContent(
         permisoConcedido = permisoConcedido,
         mensaje = mensaje,
+        mostrarBannerExito = mostrarBannerExito,
         onPedirPermiso = { lanzadorPermiso.launch(Manifest.permission.CAMERA) },
         onAbrirAjustes = {
-            // Para cuando el permiso fue negado "para siempre"
             val intent = Intent(
                 Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                 Uri.fromParts("package", contexto.packageName, null)
@@ -109,18 +114,36 @@ fun QrScannerScreen(
                 viewModel.escanearCodigoQR(codigo) { resultado ->
                     when (resultado) {
                         is ResultadoEscaneo.Exito -> {
-                            mensaje = recursos.getString(R.string.escaner_exito, resultado.punto.puntosRecompensa, resultado.punto.titulo)
-                            onVerVideo(resultado.punto.id)
+                            mensaje = recursos.getString(
+                                R.string.escaner_exito,
+                                resultado.punto.puntosRecompensa,
+                                resultado.punto.titulo
+                            )
+                            // 1. Activamos el banner animado
+                            mostrarBannerExito = true
+
+                            // 2. Esperamos 1.8 segundos para que el usuario VEA el "+100 puntos" antes de pasar al video
+                            alcance.launch {
+                                delay(1.8.seconds)
+                                mostrarBannerExito = false
+                                onVerVideo(resultado.punto.id)
+                                procesando = false
+                            }
                         }
-                        is ResultadoEscaneo.YaVisitado ->
+                        is ResultadoEscaneo.YaVisitado -> {
                             mensaje = recursos.getString(R.string.escaner_ya_visitado, resultado.punto.titulo)
-                        ResultadoEscaneo.Invalido ->
+                            alcance.launch {
+                                delay(2.seconds)
+                                procesando = false
+                            }
+                        }
+                        ResultadoEscaneo.Invalido -> {
                             mensaje = recursos.getString(R.string.escaner_invalido)
-                    }
-                    // Pausa de 2 segundos antes de aceptar otra lectura
-                    alcance.launch {
-                        delay(2.seconds)
-                        procesando = false
+                            alcance.launch {
+                                delay(2.seconds)
+                                procesando = false
+                            }
+                        }
                     }
                 }
             }
@@ -128,12 +151,13 @@ fun QrScannerScreen(
     )
 }
 
-/** Versión "stateless": solo dibuja según lo que recibe. */
+/** Versión "stateless": dibuja la interfaz y anima el mensaje de puntos. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QrScannerContent(
     permisoConcedido: Boolean,
     mensaje: String,
+    mostrarBannerExito: Boolean,
     onPedirPermiso: () -> Unit,
     onAbrirAjustes: () -> Unit,
     onCodigoDetectado: (String) -> Unit
@@ -152,22 +176,41 @@ fun QrScannerContent(
                     onCodigoDetectado = onCodigoDetectado,
                     modifier = Modifier.fillMaxSize()
                 )
-                // Mensaje flotante sobre la cámara
-                Surface(
+
+                // Animación de entrada y salida para el mensaje de éxito / estado
+                AnimatedVisibility(
+                    visible = true, // Permanece visible para mostrar las instrucciones o avisos
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(24.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                        .padding(24.dp)
                 ) {
-                    Text(
-                        text = mensaje,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Center
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (mostrarBannerExito) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                        },
+                        tonalElevation = 8.dp
+                    ) {
+                        Text(
+                            text = mensaje,
+                            modifier = Modifier.padding(16.dp),
+                            textAlign = TextAlign.Center,
+                            style = if (mostrarBannerExito) {
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            } else {
+                                MaterialTheme.typography.bodyMedium
+                            }
+                        )
+                    }
                 }
             } else {
-                // Sin permiso: explica y ofrece las dos salidas
                 Column(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -187,10 +230,7 @@ fun QrScannerContent(
     }
 }
 
-/**
- * Vista previa de la cámara + lectura de QR con ML Kit.
- * CameraX se encarga de la cámara; ML Kit analiza cada fotograma.
- */
+/** Vista previa de la cámara + lectura de QR con ML Kit. */
 @Composable
 private fun CamaraQr(
     onCodigoDetectado: (String) -> Unit,
@@ -198,13 +238,11 @@ private fun CamaraQr(
 ) {
     val contexto = LocalContext.current
     val ciclo = LocalLifecycleOwner.current
-    // Siempre usa la versión más reciente del callback
     val alDetectar by rememberUpdatedState(onCodigoDetectado)
 
     val controlador = remember { LifecycleCameraController(contexto) }
 
     DisposableEffect(ciclo) {
-        // Escáner configurado solo para códigos QR (más rápido)
         val escaner = BarcodeScanning.getClient(
             BarcodeScannerOptions.Builder()
                 .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
@@ -223,7 +261,6 @@ private fun CamaraQr(
                 if (codigo != null) alDetectar(codigo)
             }
         )
-        // La cámara se enciende y apaga sola según el ciclo de vida de la pantalla
         controlador.bindToLifecycle(ciclo)
 
         onDispose {
@@ -233,7 +270,6 @@ private fun CamaraQr(
         }
     }
 
-    // PreviewView es una vista clásica de Android; AndroidView la mete en Compose
     AndroidView(
         modifier = modifier,
         factory = { ctx ->

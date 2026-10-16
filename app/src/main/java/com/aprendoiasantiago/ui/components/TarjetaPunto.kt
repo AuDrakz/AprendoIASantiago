@@ -1,111 +1,81 @@
 package com.aprendoiasantiago.ui.components
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.aprendoiasantiago.model.PuntoInteres
-import androidx.compose.ui.res.stringResource
-import com.aprendoiasantiago.R
 
-/**
- * Tarjeta reutilizable de un punto de interés (stateless):
- * recibe datos y expone eventos, no conoce el ViewModel.
- */
 @Composable
 fun TarjetaPunto(
     punto: PuntoInteres,
-    onEscanearClick: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val visitado = punto.fueVisitado
+    val fuentesInteraccion = remember { MutableInteractionSource() }
+    val presionado by fuentesInteraccion.collectIsPressedAsState()
+
+    // 1. Animación de escala al presionar
+    val escala by animateFloatAsState(
+        targetValue = if (presionado) 0.96f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "escalaTarjeta"
+    )
+
+    // 2. Animación de elevación de la tarjeta
+    val elevacion by animateDpAsState(
+        targetValue = if (presionado) 8.dp else 2.dp,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "elevacionTarjeta"
+    )
 
     Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (visitado) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = escala
+                scaleY = escala
+            }
+            .clickable(
+                interactionSource = fuentesInteraccion,
+                indication = null
+            ) {
+                onClick()
+            },
+        elevation = CardDefaults.cardElevation(defaultElevation = elevacion)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.Top) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = punto.titulo, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        text = punto.conceptoIA,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                BadgeEstado(visitado = visitado)
-            }
-
-            Spacer(Modifier.height(8.dp))
             Text(
-                text = stringResource(R.string.puntos_recompensa, punto.puntosRecompensa),
-                style = MaterialTheme.typography.labelLarge
+                text = punto.titulo,
+                style = MaterialTheme.typography.titleMedium
             )
-
-            // El botón solo aparece si el punto aún no se visita
-            if (!visitado) {
-                Spacer(Modifier.height(12.dp))
-                FilledTonalButton(
-                    onClick = onEscanearClick,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text(stringResource(R.string.tarjeta_escanear))
-                }
-            }
-        }
-    }
-}
-
-/** Insignia "Visitado" / "Pendiente" con icono. */
-@Composable
-private fun BadgeEstado(visitado: Boolean) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = if (visitado) MaterialTheme.colorScheme.primary
-        else MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = if (visitado) MaterialTheme.colorScheme.onPrimary
-        else MaterialTheme.colorScheme.onSecondaryContainer
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = if (visitado) Icons.Filled.CheckCircle else Icons.Filled.Place,
-                contentDescription = null, // el texto ya describe el estado
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(Modifier.width(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = if (visitado) stringResource(R.string.tarjeta_visitado) else stringResource(R.string.tarjeta_pendiente),
-                style = MaterialTheme.typography.labelMedium
+                text = "+${punto.puntosRecompensa} Puntos",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun TarjetaPuntoPreview() {
-    MaterialTheme {
-        TarjetaPunto(
-            punto = PuntoInteres(
-                1, "Palacio de La Moneda", "Visión por Computador",
-                -33.4429, -70.6539, "QR_LAMONEDA_01", 100, ""
-            ),
-            onEscanearClick = {}
-        )
     }
 }

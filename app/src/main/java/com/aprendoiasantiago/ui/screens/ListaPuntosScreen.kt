@@ -8,14 +8,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aprendoiasantiago.R
 import com.aprendoiasantiago.model.PuntoInteres
 import com.aprendoiasantiago.ui.components.TarjetaPunto
-import com.aprendoiasantiago.viewmodel.PuntosViewModel
 import com.aprendoiasantiago.viewmodel.FiltroPuntos
-import androidx.compose.ui.res.stringResource
-import com.aprendoiasantiago.R
+import com.aprendoiasantiago.viewmodel.PuntosViewModel
 
 /** Versión "stateful": única que conoce el ViewModel. */
 @Composable
@@ -29,7 +29,6 @@ fun ListaPuntosScreen(
         puntos = uiState.puntosFiltrados,
         filtroActual = uiState.filtro,
         onFiltroChange = viewModel::cambiarFiltro,
-        // Ya no simula: lleva al escáner con la cámara real
         onEscanearClick = { onIrAEscaner() }
     )
 }
@@ -79,7 +78,7 @@ fun ListaPuntosContent(
                     items(items = puntos, key = { it.id }) { punto ->
                         TarjetaPunto(
                             punto = punto,
-                            onEscanearClick = { onEscanearClick(punto) },
+                            onClick = { onEscanearClick(punto) },
                             // Anima entradas, salidas y reordenamientos
                             modifier = Modifier.animateItem()
                         )
