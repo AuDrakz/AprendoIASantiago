@@ -20,11 +20,14 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,22 +36,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aprendoiasantiago.R
+import com.aprendoiasantiago.data.local.UserPreferencesRepository
 import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.ui.components.ImagenInteligente
 import com.aprendoiasantiago.viewmodel.PerfilViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun PerfilRankingScreen(
     viewModel: PerfilViewModel,
+    userPreferencesRepository: UserPreferencesRepository,
     onEditarPerfil: () -> Unit,
     onRegistro: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val altoContrasteActivo by userPreferencesRepository.modoAltoContraste.collectAsState(initial = false)
+    val alcance = rememberCoroutineScope()
 
     PerfilRankingContent(
         perfil = uiState.perfil,
         ranking = uiState.ranking,
+        altoContrasteActivo = altoContrasteActivo,
+        onAltoContrasteCambiado = { nuevoEstado ->
+            alcance.launch {
+                userPreferencesRepository.guardarModoAltoContraste(nuevoEstado)
+            }
+        },
         onEditarPerfil = onEditarPerfil,
         onRegistro = onRegistro
     )
@@ -59,6 +73,8 @@ fun PerfilRankingScreen(
 fun PerfilRankingContent(
     perfil: PerfilUsuario,
     ranking: List<EntradaRanking>,
+    altoContrasteActivo: Boolean,
+    onAltoContrasteCambiado: (Boolean) -> Unit,
     onEditarPerfil: () -> Unit,
     onRegistro: () -> Unit
 ) {
@@ -72,7 +88,13 @@ fun PerfilRankingContent(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
-                TarjetaResumen(perfil, onEditarPerfil, onRegistro)
+                TarjetaResumen(
+                    perfil = perfil,
+                    altoContrasteActivo = altoContrasteActivo,
+                    onAltoContrasteCambiado = onAltoContrasteCambiado,
+                    onEditarPerfil = onEditarPerfil,
+                    onRegistro = onRegistro
+                )
             }
             item {
                 Text(
@@ -96,6 +118,8 @@ fun PerfilRankingContent(
 @Composable
 private fun TarjetaResumen(
     perfil: PerfilUsuario,
+    altoContrasteActivo: Boolean,
+    onAltoContrasteCambiado: (Boolean) -> Unit,
     onEditarPerfil: () -> Unit,
     onRegistro: () -> Unit
 ) {
@@ -128,6 +152,24 @@ private fun TarjetaResumen(
             ) {
                 Metrica(perfil.puntosTotales, stringResource(R.string.perfil_metrica_puntos))
                 Metrica(perfil.lugaresDescubiertos, stringResource(R.string.perfil_metrica_lugares))
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Interruptor de Alto Contraste (DataStore)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Modo Alto Contraste (Luz Solar)",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Switch(
+                    checked = altoContrasteActivo,
+                    onCheckedChange = onAltoContrasteCambiado
+                )
             }
 
             Spacer(Modifier.height(16.dp))

@@ -14,7 +14,13 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -76,6 +82,8 @@ fun FormularioPerfil(
             onValueChange = onNombre,
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.editar_nombre_label)) },
+            leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
+            trailingIcon = { if (estado.errorNombre != null) IconoError() },
             isError = estado.errorNombre != null,
             supportingText = { estado.errorNombre?.let { Text(stringResource(it)) } },
             singleLine = true
@@ -85,6 +93,8 @@ fun FormularioPerfil(
             onValueChange = onEmail,
             modifier = Modifier.fillMaxWidth(),
             label = { Text(stringResource(R.string.editar_correo_label)) },
+            leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
+            trailingIcon = { if (estado.errorEmail != null) IconoError() },
             isError = estado.errorEmail != null,
             supportingText = { estado.errorEmail?.let { Text(stringResource(it)) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -92,7 +102,14 @@ fun FormularioPerfil(
         )
 
         Column(Modifier.fillMaxWidth().selectableGroup()) {
-            Text(stringResource(R.string.rol_label), style = MaterialTheme.typography.labelLarge)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.AccountBox, contentDescription = null)
+                Text(
+                    stringResource(R.string.rol_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
             Rol.entries.forEach { rol ->
                 Row(
                     modifier = Modifier
@@ -117,4 +134,13 @@ fun FormularioPerfil(
             contentPadding = PaddingValues(vertical = 14.dp)
         ) { Text(stringResource(textoBoton)) }
     }
+}
+
+@Composable
+private fun IconoError() {
+    Icon(
+        Icons.Filled.Warning,
+        contentDescription = null, // el mensaje de error debajo del campo ya lo describe
+        tint = MaterialTheme.colorScheme.error
+    )
 }

@@ -81,8 +81,10 @@ fun ListaPuntosContent(
                     items(items = puntos, key = { it.id }) { punto ->
                         TarjetaPunto(
                             punto = punto,
-                            onEscanearClick = { onEscanearClick(punto) },
-                            onVerDetalleClick = { onVerDetalleClick(punto) },
+                            // Pendiente: ir a escanear. Visitado: volver al detalle y la selfie
+                            onClick = {
+                                if (punto.fueVisitado) onVerDetalleClick(punto) else onEscanearClick(punto)
+                            },
                             // Anima entradas, salidas y reordenamientos
                             modifier = Modifier.animateItem()
                         )
