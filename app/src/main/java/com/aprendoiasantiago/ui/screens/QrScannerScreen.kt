@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -89,7 +90,7 @@ fun QrScannerScreen(
     var mensaje by remember { mutableStateOf(instruccion) }
     var procesando by remember { mutableStateOf(false) }
 
-    // Estado para controlar cuándo mostrar la tarjeta con la animación AnimatedVisibility
+    // Estado para controlar la animación del banner de éxito
     var mostrarBannerExito by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -99,6 +100,7 @@ fun QrScannerScreen(
     QrScannerContent(
         permisoConcedido = permisoConcedido,
         mensaje = mensaje,
+        procesando = procesando,
         mostrarBannerExito = mostrarBannerExito,
         onPedirPermiso = { lanzadorPermiso.launch(Manifest.permission.CAMERA) },
         onAbrirAjustes = {
@@ -119,10 +121,9 @@ fun QrScannerScreen(
                                 resultado.punto.puntosRecompensa,
                                 resultado.punto.titulo
                             )
-                            // 1. Activamos el banner animado
+                            // Activamos la visibilidad animada
                             mostrarBannerExito = true
 
-                            // 2. Esperamos 1.8 segundos para que el usuario VEA el "+100 puntos" antes de pasar al video
                             alcance.launch {
                                 delay(1.8.seconds)
                                 mostrarBannerExito = false
@@ -151,12 +152,13 @@ fun QrScannerScreen(
     )
 }
 
-/** Versión "stateless": dibuja la interfaz y anima el mensaje de puntos. */
+/** Versión "stateless": dibuja la interfaz, el loader y la animación del mensaje de puntos. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QrScannerContent(
     permisoConcedido: Boolean,
     mensaje: String,
+    procesando: Boolean,
     mostrarBannerExito: Boolean,
     onPedirPermiso: () -> Unit,
     onAbrirAjustes: () -> Unit,
@@ -177,9 +179,17 @@ fun QrScannerContent(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Animación de entrada y salida para el mensaje de éxito / estado
+                // Loader cuando el escáner o el ViewModel están procesando
+                if (procesando && !mostrarBannerExito) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                // Animación dinámica activada mediante mostrarBannerExito
                 AnimatedVisibility(
-                    visible = true, // Permanece visible para mostrar las instrucciones o avisos
+                    visible = mostrarBannerExito,
                     enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
                     exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
                     modifier = Modifier
@@ -188,25 +198,17 @@ fun QrScannerContent(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = if (mostrarBannerExito) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                        },
+                        color = MaterialTheme.colorScheme.primaryContainer,
                         tonalElevation = 8.dp
                     ) {
                         Text(
                             text = mensaje,
                             modifier = Modifier.padding(16.dp),
                             textAlign = TextAlign.Center,
-                            style = if (mostrarBannerExito) {
-                                MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            } else {
-                                MaterialTheme.typography.bodyMedium
-                            }
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         )
                     }
                 }
