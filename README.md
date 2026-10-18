@@ -83,3 +83,4 @@ Probada en teléfono físico.
 ## En desarrollo
 - Animaciones y tema de alto contraste.
 - Pruebas unitarias.
+- Control de acceso por rol (hoy el rol es informativo y se elige libremente) y sesión de usuario.

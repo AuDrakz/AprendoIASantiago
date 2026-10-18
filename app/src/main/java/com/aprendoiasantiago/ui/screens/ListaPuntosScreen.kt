@@ -21,7 +21,8 @@ import com.aprendoiasantiago.viewmodel.PuntosViewModel
 @Composable
 fun ListaPuntosScreen(
     viewModel: PuntosViewModel,
-    onIrAEscaner: () -> Unit
+    onIrAEscaner: () -> Unit,
+    onVerDetalle: (Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -29,7 +30,8 @@ fun ListaPuntosScreen(
         puntos = uiState.puntosFiltrados,
         filtroActual = uiState.filtro,
         onFiltroChange = viewModel::cambiarFiltro,
-        onEscanearClick = { onIrAEscaner() }
+        onEscanearClick = { onIrAEscaner() },
+        onVerDetalleClick = { punto -> onVerDetalle(punto.id) }
     )
 }
 
@@ -40,7 +42,8 @@ fun ListaPuntosContent(
     puntos: List<PuntoInteres>,
     filtroActual: FiltroPuntos,
     onFiltroChange: (FiltroPuntos) -> Unit,
-    onEscanearClick: (PuntoInteres) -> Unit
+    onEscanearClick: (PuntoInteres) -> Unit,
+    onVerDetalleClick: (PuntoInteres) -> Unit
 ) {
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -78,7 +81,10 @@ fun ListaPuntosContent(
                     items(items = puntos, key = { it.id }) { punto ->
                         TarjetaPunto(
                             punto = punto,
-                            onClick = { onEscanearClick(punto) },
+                            // Pendiente: ir a escanear. Visitado: volver al detalle y la selfie
+                            onClick = {
+                                if (punto.fueVisitado) onVerDetalleClick(punto) else onEscanearClick(punto)
+                            },
                             // Anima entradas, salidas y reordenamientos
                             modifier = Modifier.animateItem()
                         )

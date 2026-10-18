@@ -1,12 +1,13 @@
 package com.aprendoiasantiago.viewmodel
 
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aprendoiasantiago.R
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.model.Rol
 import com.aprendoiasantiago.repository.PuntoRepository
+import com.aprendoiasantiago.util.ArchivosFoto
+import com.aprendoiasantiago.util.Validaciones
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,8 +35,13 @@ class PerfilViewModel(
     private val _formulario = MutableStateFlow(FormularioUiState())
     val formulario: StateFlow<FormularioUiState> = _formulario.asStateFlow()
 
-    /** Para editar: precarga el formulario con el perfil actual. */
+    // Vive en memoria del ViewModel: sobrevive a rotaciones y se reinicia si Android cierra el proceso
+    private var formularioCargado = false
+
+    /** Para editar: precarga el formulario una sola vez por visita. */
     fun cargarFormulario(perfil: PerfilUsuario) {
+        if (formularioCargado || perfil.id == 0) return // id 0 = Room aún no entrega el perfil
+        formularioCargado = true
         _formulario.value = FormularioUiState(
             nombre = perfil.nombreUsuario,
             email = perfil.email,
@@ -44,9 +50,16 @@ class PerfilViewModel(
         )
     }
 
-    /** Para registrar: formulario vacío. */
+    /** Para registrar: formulario vacío, una sola vez por visita. */
     fun limpiarFormulario() {
+        if (formularioCargado) return
+        formularioCargado = true
         _formulario.value = FormularioUiState()
+    }
+
+    /** Al salir de la pantalla (no al rotar) libera el formulario para la próxima visita. */
+    fun cerrarFormulario() {
+        formularioCargado = false
     }
 
     fun onNombreCambia(valor: String) =
@@ -57,7 +70,14 @@ class PerfilViewModel(
 
     fun onRolCambia(valor: Rol) = _formulario.update { it.copy(rol = valor) }
 
-    fun onFotoCambia(ruta: String?) = _formulario.update { it.copy(fotoRuta = ruta) }
+    fun onFotoCambia(ruta: String?) {
+        val anterior = _formulario.value.fotoRuta
+        // Borra la foto anterior solo si era un borrador (no la que ya está guardada en Room)
+        if (anterior != null && anterior != uiState.value.perfil.fotoRuta) {
+            ArchivosFoto.borrar(anterior)
+        }
+        _formulario.update { it.copy(fotoRuta = ruta) }
+    }
 
     /** Valida todos los campos y publica los errores. true si todo es válido. */
     fun validarFormulario(): Boolean {
@@ -87,7 +107,7 @@ class PerfilViewModel(
 
     private fun errorEmail(valor: String): Int? = when {
         valor.isBlank() -> R.string.error_correo_obligatorio
-        !Patterns.EMAIL_ADDRESS.matcher(valor.trim()).matches() -> R.string.error_correo_invalido
+        !Validaciones.emailValido(valor) -> R.string.error_correo_invalido
         else -> null
     }
 }

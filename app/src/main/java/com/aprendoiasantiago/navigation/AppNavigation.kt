@@ -170,6 +170,9 @@ private fun AppNavHost(
                 viewModel = puntosViewModel,
                 onIrAEscaner = {
                     navController.navigate(Screen.ScannerQR.route)
+                },
+                onVerDetalle = { puntoId ->
+                    navController.navigate(Screen.DetalleVideo.crearRuta(puntoId))
                 }
             )
         }

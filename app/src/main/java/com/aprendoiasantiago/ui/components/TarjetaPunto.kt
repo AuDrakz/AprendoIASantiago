@@ -125,6 +125,16 @@ fun TarjetaPunto(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
+
+            // Pista: solo las tarjetas visitadas abren el detalle y la selfie
+            if (punto.fueVisitado) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.tarjeta_ver_detalle),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

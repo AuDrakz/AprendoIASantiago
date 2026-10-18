@@ -83,5 +83,11 @@
     <string name="selfie_titulo">Selfie de validación</string>
     <string name="selfie_tomar">Tomar selfie</string>
     <string name="selfie_descripcion">Toma una selfie para validar tu visita</string>
+    <string name="foto_invalida">La imagen no es válida, intenta de nuevo</string>
+    <string name="tarjeta_ver_detalle">Ver detalle y selfie</string>
+    <string name="registro_confirmar_titulo">Confirmar registro</string>
+    <string name="registro_confirmar_texto">¿Deseas guardar los datos ingresados?</string>
+    <string name="registro_confirmar_si">Sí, guardar</string>
+    <string name="registro_confirmar_no">Cancelar</string>
 
 </resources>

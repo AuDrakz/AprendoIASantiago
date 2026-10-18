@@ -12,6 +12,7 @@ import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.model.PuntoInteres
 import com.aprendoiasantiago.model.Rol
 import com.aprendoiasantiago.model.ResultadoEscaneo
+import com.aprendoiasantiago.util.ArchivosFoto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -77,13 +78,18 @@ class PuntoRepository(
     }
 
     suspend fun actualizarPerfil(nombreUsuario: String, email: String, rol: Rol, fotoRuta: String?) {
+        val anterior = perfilDao.fotoActual(PERFIL_ID)
         perfilDao.guardar(
             PerfilEntity(PERFIL_ID, nombreUsuario.trim(), email.trim(), rol, fotoRuta)
         )
+        if (anterior != fotoRuta) ArchivosFoto.borrar(anterior) // no deja fotos huérfanas
     }
 
-    suspend fun guardarSelfie(puntoId: Int, ruta: String) =
+    suspend fun guardarSelfie(puntoId: Int, ruta: String) {
+        val anterior = puntoDao.selfieActual(puntoId)
         puntoDao.guardarSelfie(puntoId, ruta)
+        if (anterior != ruta) ArchivosFoto.borrar(anterior)
+    }
 
     /**
      * Valida el código QR contra la base de datos.
