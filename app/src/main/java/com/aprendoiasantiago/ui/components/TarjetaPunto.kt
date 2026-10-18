@@ -112,7 +112,7 @@ fun TarjetaPunto(
 
             // Concepto de IA recuperado
             Text(
-                text = "Concepto IA: ${punto.conceptoIA}",
+                text = stringResource(R.string.tarjeta_concepto_ia, punto.conceptoIA),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

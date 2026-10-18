@@ -21,6 +21,7 @@
     <string name="tarjeta_escanear">Escanear QR</string>
     <string name="tarjeta_visitado">Visitado</string>
     <string name="tarjeta_pendiente">Pendiente</string>
+    <string name="tarjeta_concepto_ia">Concepto IA: %1$s</string>
 
     <!-- Mapa -->
     <string name="mapa_titulo">Mapa de puntos</string>
@@ -50,6 +51,7 @@
     <string name="perfil_metrica_puntos">Puntos</string>
     <string name="perfil_metrica_lugares">Lugares</string>
     <string name="editar_perfil">Editar perfil</string>
+    <string name="ajustes_alto_contraste">Modo Alto Contraste (Luz Solar)</string>
     <string name="ranking_pts">%1$d pts</string>
 
     <!-- Editar perfil -->

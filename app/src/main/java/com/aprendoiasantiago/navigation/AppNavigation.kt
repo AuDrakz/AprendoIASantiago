@@ -9,7 +9,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -21,10 +20,8 @@ import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -36,6 +33,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.aprendoiasantiago.R
 import com.aprendoiasantiago.data.local.UserPreferencesRepository
+import com.aprendoiasantiago.ui.components.IconoEscanerQr
 import com.aprendoiasantiago.ui.screens.DetalleVideoScreen
 import com.aprendoiasantiago.ui.screens.EditarPerfilScreen
 import com.aprendoiasantiago.ui.screens.ListaPuntosScreen
@@ -67,7 +65,7 @@ private val itemsBarra = listOf(
     ItemBarra(
         Screen.ScannerQR,
         R.string.nav_escaner,
-        Icons.Filled.Search
+        IconoEscanerQr
     ),
     ItemBarra(
         Screen.Perfil,
@@ -81,14 +79,12 @@ fun AppNavigation(
     puntosViewModel: PuntosViewModel,
     perfilViewModel: PerfilViewModel,
     escanerViewModel: EscanerViewModel,
+    userPreferencesRepository: UserPreferencesRepository,
     windowSizeClass: WindowSizeClass
 ) {
     val navController = rememberNavController()
     val entradaActual by navController.currentBackStackEntryAsState()
     val rutaActual = entradaActual?.destination?.route
-
-    val contexto = LocalContext.current
-    val userPreferencesRepository = remember { UserPreferencesRepository(contexto) }
 
     val irAPestana: (String) -> Unit = { ruta ->
         navController.navigate(ruta) {

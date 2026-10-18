@@ -163,7 +163,7 @@ private fun TarjetaResumen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Modo Alto Contraste (Luz Solar)",
+                    text = stringResource(R.string.ajustes_alto_contraste),
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Switch(
