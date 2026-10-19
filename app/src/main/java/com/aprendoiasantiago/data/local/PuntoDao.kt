@@ -1,3 +1,4 @@
+
 package com.aprendoiasantiago.data.local
 
 import androidx.room.Dao
@@ -10,8 +11,6 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PuntoDao {
 
-    // Flow: cada vez que la tabla cambia, emite la lista nueva sola.
-    // Gracias a esto la UI se actualiza sin que tengamos que pedirlo.
     @Query("SELECT * FROM puntos ORDER BY id")
     fun observarPuntos(): Flow<List<PuntoEntity>>
 
@@ -21,8 +20,18 @@ interface PuntoDao {
     @Query("SELECT * FROM puntos WHERE codigoQR = :codigo LIMIT 1")
     suspend fun buscarPorQr(codigo: String): PuntoEntity?
 
-    @Query("UPDATE puntos SET fueVisitado = 1 WHERE id = :id AND fueVisitado = 0")
-    suspend fun marcarVisitado(id: Int): Int
+    @Query("""
+        UPDATE puntos
+        SET fueVisitado = 1,
+            fechaVisita = :fecha,
+            altitudVisita = :altitud
+        WHERE id = :id AND fueVisitado = 0
+    """)
+    suspend fun marcarVisitado(
+        id: Int,
+        fecha: String,
+        altitud: Double?
+    ): Int
 
     @Query("UPDATE puntos SET selfieRuta = :ruta WHERE id = :id")
     suspend fun guardarSelfie(id: Int, ruta: String)

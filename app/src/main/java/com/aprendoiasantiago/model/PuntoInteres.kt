@@ -13,5 +13,7 @@ data class PuntoInteres(
     val puntosRecompensa: Int,
     val urlVideo: String,
     val fueVisitado: Boolean = false,
-    val selfieRuta: String? = null
+    val selfieRuta: String? = null,
+    val fechaVisita: String? = null,
+    val altitudVisita: Double? = null
 )

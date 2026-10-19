@@ -1,3 +1,4 @@
+
 package com.aprendoiasantiago.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -6,20 +7,26 @@ import com.aprendoiasantiago.model.ResultadoEscaneo
 import com.aprendoiasantiago.repository.PuntoRepository
 import kotlinx.coroutines.launch
 
-class EscanerViewModel (
+class EscanerViewModel(
     private val repositorio: PuntoRepository
 ) : ViewModel() {
-    /**
-     * Procesa QR leido. Corre en una corrutina porque Room no permite
-     * acceder a la base de datos desde el hilo principal
-     * El resultado llegar por el callback
-     */
+
     fun escanearCodigoQR(
         codigoLeido: String,
-        onResultado: (ResultadoEscaneo) -> Unit = {}
+        latitudUsuario: Double?,
+        longitudUsuario: Double?,
+        onResultado: (ResultadoEscaneo) -> Unit = {},
+        altitudUsuario: Double? = null
     ) {
         viewModelScope.launch {
-            onResultado(repositorio.registrarVisita(codigoLeido))
+            val resultado = repositorio.registrarVisita(
+                codigoQR = codigoLeido,
+                latitudUsuario = latitudUsuario,
+                longitudUsuario = longitudUsuario,
+                altitudUsuario = altitudUsuario
+            )
+
+            onResultado(resultado)
         }
     }
 }

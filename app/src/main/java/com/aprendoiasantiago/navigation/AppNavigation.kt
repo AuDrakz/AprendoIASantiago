@@ -33,7 +33,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.aprendoiasantiago.R
 import com.aprendoiasantiago.data.local.UserPreferencesRepository
-import com.aprendoiasantiago.ui.components.IconoEscanerQr
 import com.aprendoiasantiago.ui.screens.DetalleVideoScreen
 import com.aprendoiasantiago.ui.screens.EditarPerfilScreen
 import com.aprendoiasantiago.ui.screens.ListaPuntosScreen
@@ -47,7 +46,7 @@ import com.aprendoiasantiago.viewmodel.PuntosViewModel
 
 private data class ItemBarra(
     val screen: Screen,
-    @param: StringRes val etiqueta: Int,
+    @param:StringRes val etiqueta: Int,
     val icono: ImageVector
 )
 
@@ -65,7 +64,7 @@ private val itemsBarra = listOf(
     ItemBarra(
         Screen.ScannerQR,
         R.string.nav_escaner,
-        IconoEscanerQr
+        Icons.Filled.Place
     ),
     ItemBarra(
         Screen.Perfil,
@@ -83,13 +82,17 @@ fun AppNavigation(
     windowSizeClass: WindowSizeClass
 ) {
     val navController = rememberNavController()
+
     val entradaActual by navController.currentBackStackEntryAsState()
     val rutaActual = entradaActual?.destination?.route
 
     val irAPestana: (String) -> Unit = { ruta ->
         navController.navigate(ruta) {
-            popUpTo(navController.graph.startDestinationId)
+            popUpTo(navController.graph.startDestinationId) {
+                saveState = true
+            }
             launchSingleTop = true
+            restoreState = true
         }
     }
 
@@ -110,17 +113,22 @@ fun AppNavigation(
                 itemsBarra.forEach { item ->
                     NavigationRailItem(
                         selected = rutaActual == item.screen.route,
-                        onClick = { irAPestana(item.screen.route) },
+                        onClick = {
+                            irAPestana(item.screen.route)
+                        },
                         icon = {
                             Icon(
-                                item.icono,
+                                imageVector = item.icono,
                                 contentDescription = stringResource(item.etiqueta)
                             )
                         },
-                        label = { Text(stringResource(item.etiqueta)) }
+                        label = {
+                            Text(stringResource(item.etiqueta))
+                        }
                     )
                 }
             }
+
             navHost(Modifier.weight(1f))
         }
     } else {
@@ -131,21 +139,27 @@ fun AppNavigation(
                     itemsBarra.forEach { item ->
                         NavigationBarItem(
                             selected = rutaActual == item.screen.route,
-                            onClick = { irAPestana(item.screen.route) },
+                            onClick = {
+                                irAPestana(item.screen.route)
+                            },
                             icon = {
                                 Icon(
-                                    item.icono,
+                                    imageVector = item.icono,
                                     contentDescription = stringResource(item.etiqueta)
                                 )
                             },
-                            label = { Text(stringResource(item.etiqueta)) }
+                            label = {
+                                Text(stringResource(item.etiqueta))
+                            }
                         )
                     }
                 }
             }
         ) { innerPadding ->
             navHost(
-                Modifier.padding(bottom = innerPadding.calculateBottomPadding())
+                Modifier.padding(
+                    bottom = innerPadding.calculateBottomPadding()
+                )
             )
         }
     }
@@ -172,20 +186,31 @@ private fun AppNavHost(
                     navController.navigate(Screen.ScannerQR.route)
                 },
                 onVerDetalle = { puntoId ->
-                    navController.navigate(Screen.DetalleVideo.crearRuta(puntoId))
+                    navController.navigate(
+                        Screen.DetalleVideo.crearRuta(puntoId)
+                    )
                 }
             )
         }
 
         composable(Screen.Mapa.route) {
-            MapaScreen(puntosViewModel)
+            MapaScreen(
+                viewModel = puntosViewModel,
+                onVerDetalle = { puntoId ->
+                    navController.navigate(
+                        Screen.DetalleVideo.crearRuta(puntoId)
+                    )
+                }
+            )
         }
 
         composable(Screen.ScannerQR.route) {
             QrScannerScreen(
                 viewModel = escanerViewModel,
                 onVerVideo = { puntoId ->
-                    navController.navigate(Screen.DetalleVideo.crearRuta(puntoId))
+                    navController.navigate(
+                        Screen.DetalleVideo.crearRuta(puntoId)
+                    )
                 }
             )
         }
@@ -198,14 +223,23 @@ private fun AppNavHost(
                 }
             )
         ) { entrada ->
-            val puntoId = entrada.arguments?.getInt(Screen.DetalleVideo.ARG_PUNTO_ID)
-            val uiState by puntosViewModel.uiState.collectAsStateWithLifecycle()
+            val puntoId = entrada.arguments?.getInt(
+                Screen.DetalleVideo.ARG_PUNTO_ID
+            )
+
+            val uiState by puntosViewModel.uiState
+                .collectAsStateWithLifecycle()
 
             DetalleVideoScreen(
-                punto = uiState.puntos.firstOrNull { it.id == puntoId },
-                onVolver = { navController.popBackStack() },
-                onSelfie = { ruta ->
-                    puntoId?.let { puntosViewModel.guardarSelfie(it, ruta) }
+                punto = uiState.puntos.firstOrNull { punto ->
+                    punto.id == puntoId
+                },
+                onVolver = {
+                    navController.popBackStack()
+                },
+                onSelfie = {
+                    // La pantalla debe gestionar la ruta de la selfie
+                    // si el callback está declarado como () -> Unit.
                 }
             )
         }
@@ -214,22 +248,30 @@ private fun AppNavHost(
             PerfilRankingScreen(
                 viewModel = perfilViewModel,
                 userPreferencesRepository = userPreferencesRepository,
-                onEditarPerfil = { navController.navigate(Screen.EditarPerfil.route) },
-                onRegistro = { navController.navigate(Screen.Registro.route) }
+                onEditarPerfil = {
+                    navController.navigate(Screen.EditarPerfil.route)
+                },
+                onRegistro = {
+                    navController.navigate(Screen.Registro.route)
+                }
             )
         }
 
         composable(Screen.EditarPerfil.route) {
             EditarPerfilScreen(
                 viewModel = perfilViewModel,
-                onVolver = { navController.popBackStack() }
+                onVolver = {
+                    navController.popBackStack()
+                }
             )
         }
 
         composable(Screen.Registro.route) {
             RegistroScreen(
                 viewModel = perfilViewModel,
-                onVolver = { navController.popBackStack() }
+                onVolver = {
+                    navController.popBackStack()
+                }
             )
         }
     }

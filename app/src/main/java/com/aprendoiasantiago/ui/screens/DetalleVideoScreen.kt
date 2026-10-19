@@ -1,150 +1,212 @@
 package com.aprendoiasantiago.ui.screens
 
-import android.content.Intent
+import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
-import com.aprendoiasantiago.R
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import com.aprendoiasantiago.model.PuntoInteres
-import com.aprendoiasantiago.ui.components.ImagenInteligente
-import com.aprendoiasantiago.ui.components.SelectorFoto
 
-/**
- * Detalle de un punto: concepto de IA, cápsula de video y selfie de validación.
- * Recibe el punto ya buscado (puede ser null si el id no existe).
- */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetalleVideoScreen(
     punto: PuntoInteres?,
     onVolver: () -> Unit,
-    onSelfie: (String) -> Unit
+    onSelfie: () -> Unit
 ) {
-    val contexto = LocalContext.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Button(onClick = onVolver) {
+            Text("Volver")
+        }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.detalle_titulo)) },
-                navigationIcon = {
-                    IconButton(onClick = onVolver) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.volver))
+        if (punto == null) {
+            Text(
+                text = "No se encontró el punto seleccionado.",
+                style = MaterialTheme.typography.bodyLarge
+            )
+            return@Column
+        }
+
+        Text(
+            text = punto.titulo,
+            style = MaterialTheme.typography.headlineSmall
+        )
+
+        Text(
+            text = punto.conceptoIA,
+            style = MaterialTheme.typography.bodyLarge
+        )
+
+        Text("Recompensa: ${punto.puntosRecompensa} puntos")
+
+        Text(
+            text = if (punto.fueVisitado) {
+                "Estado: punto visitado"
+            } else {
+                "Estado: punto pendiente"
+            }
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Text(
+                    text = "Video educativo",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                ReproductorVideo(
+                    url = punto.urlVideo,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(230.dp)
+                )
+            }
+        }
+
+        if (punto.fueVisitado) {
+            Button(
+                onClick = onSelfie,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Ver o tomar selfie")
+            }
+        }
+    }
+}
+
+@OptIn(markerClass = [UnstableApi::class])
+@Composable
+private fun ReproductorVideo(
+    url: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    var cargando by remember(url) {
+        mutableStateOf(url.isNotBlank())
+    }
+
+    var errorVideo by remember(url) {
+        mutableStateOf<String?>(null)
+    }
+
+    val reproductor = remember(url) {
+        ExoPlayer.Builder(context).build().apply {
+            playWhenReady = false
+
+            addListener(object : Player.Listener {
+
+                override fun onPlaybackStateChanged(
+                    playbackState: Int
+                ) {
+                    cargando =
+                        playbackState == Player.STATE_BUFFERING ||
+                                playbackState == Player.STATE_IDLE && url.isNotBlank()
+
+                    if (playbackState == Player.STATE_READY) {
+                        cargando = false
+                        errorVideo = null
+                    }
+
+                    if (playbackState == Player.STATE_ENDED) {
+                        cargando = false
                     }
                 }
+
+                override fun onPlayerError(
+                    error: PlaybackException
+                ) {
+                    cargando = false
+                    errorVideo =
+                        "No se pudo reproducir el video. " +
+                                "Comprueba tu conexión o la dirección del video."
+                }
+            })
+
+            if (url.isNotBlank()) {
+                setMediaItem(MediaItem.fromUri(url))
+                prepare()
+            } else {
+                cargando = false
+                errorVideo = "Este punto no tiene una dirección de video."
+            }
+        }
+    }
+
+    DisposableEffect(reproductor) {
+        onDispose {
+            reproductor.release()
+        }
+    }
+
+    Column(modifier = modifier) {
+        AndroidView(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(230.dp),
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    player = reproductor
+                    useController = true
+                    setShowBuffering(
+                        PlayerView.SHOW_BUFFERING_WHEN_PLAYING
+                    )
+                }
+            },
+            update = { vista ->
+                vista.player = reproductor
+            }
+        )
+
+        if (cargando && errorVideo == null) {
+            CircularProgressIndicator(
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
-    ) { innerPadding ->
-        if (punto == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(stringResource(R.string.detalle_no_encontrado))
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(punto.titulo, style = MaterialTheme.typography.headlineSmall)
-                        Text(
-                            text = punto.conceptoIA,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            stringResource(R.string.puntos_recompensa, punto.puntosRecompensa),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                }
 
-                FilledTonalButton(
-                    onClick = {
-                        // Abre el video en la app que corresponda (navegador, YouTube...)
-                        runCatching {
-                            contexto.startActivity(
-                                Intent(Intent.ACTION_VIEW, punto.urlVideo.toUri())
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.detalle_ver_video))
-                }
-
-                // Selfie de validación: solo si el punto ya fue visitado
-                if (punto.fueVisitado) {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(
-                                stringResource(R.string.selfie_titulo),
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            if (punto.selfieRuta == null) {
-                                Text(
-                                    stringResource(R.string.selfie_descripcion),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                            ImagenInteligente(
-                                ruta = punto.selfieRuta,
-                                tamano = 120.dp,
-                                descripcion = stringResource(R.string.selfie_titulo)
-                            )
-                            SelectorFoto(
-                                onFotoLista = onSelfie,
-                                textoCamara = R.string.selfie_tomar,
-                                permitirGaleria = false
-                            )
-                        }
-                    }
-                }
-            }
+        errorVideo?.let { mensaje ->
+            Text(
+                text = mensaje,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }

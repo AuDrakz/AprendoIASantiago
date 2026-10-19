@@ -1,281 +1,419 @@
+
 package com.aprendoiasantiago.ui.screens
 
 import android.Manifest
-import android.content.Intent
+import android.content.Context
 import android.content.pm.PackageManager
-import android.net.Uri
-import android.provider.Settings
+import android.location.Location
+import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.OptIn
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.mlkit.vision.MlKitAnalyzer
-import androidx.camera.view.LifecycleCameraController
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.aprendoiasantiago.R
-import com.aprendoiasantiago.model.ResultadoEscaneo
 import com.aprendoiasantiago.viewmodel.EscanerViewModel
+import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.seconds
+import com.google.mlkit.vision.common.InputImage
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
-/**
- * Versión "stateful": maneja el permiso de cámara y valida cada QR con el ViewModel.
- * Si el QR es exitoso, muestra la animación de +100 puntos ANTES de navegar al video.
- */
+private data class UbicacionLeida(
+    val latitud: Double,
+    val longitud: Double,
+    val altitud: Double?
+)
+
 @Composable
 fun QrScannerScreen(
     viewModel: EscanerViewModel,
     onVerVideo: (Int) -> Unit
 ) {
-    val contexto = LocalContext.current
-    val recursos = LocalResources.current
-    val alcance = rememberCoroutineScope()
+    val context = LocalContext.current
 
-    var permisoConcedido by remember {
+    var permisoCamara by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(contexto, Manifest.permission.CAMERA) ==
-                    PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
         )
     }
 
-    val lanzadorPermiso = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { concedido -> permisoConcedido = concedido }
+    var permisoUbicacion by remember {
+        mutableStateOf(tienePermisoUbicacionQr(context))
+    }
 
-    val instruccion = stringResource(R.string.escaner_instruccion)
-    var mensaje by remember { mutableStateOf(instruccion) }
-    var procesando by remember { mutableStateOf(false) }
+    var mensaje by remember {
+        mutableStateOf("Apunta la cámara al código QR.")
+    }
 
-    // Estado para controlar la animación del banner de éxito
-    var mostrarBannerExito by remember { mutableStateOf(false) }
+    var resultadoDialogo by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    val permisosLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permisos ->
+        permisoCamara =
+            permisos[Manifest.permission.CAMERA] == true ||
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.CAMERA
+                    ) == PackageManager.PERMISSION_GRANTED
+
+        permisoUbicacion =
+            permisos[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                    permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
+                    tienePermisoUbicacionQr(context)
+
+        mensaje = when {
+            !permisoCamara ->
+                "Debes permitir el uso de la cámara para escanear QR."
+
+            !permisoUbicacion ->
+                "Debes permitir la ubicación para validar la visita."
+
+            else -> "Apunta la cámara al código QR."
+        }
+    }
 
     LaunchedEffect(Unit) {
-        if (!permisoConcedido) lanzadorPermiso.launch(Manifest.permission.CAMERA)
+        val permisosNecesarios = mutableListOf<String>()
+
+        if (!permisoCamara) {
+            permisosNecesarios.add(Manifest.permission.CAMERA)
+        }
+
+        if (!permisoUbicacion) {
+            permisosNecesarios.add(Manifest.permission.ACCESS_FINE_LOCATION)
+            permisosNecesarios.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+
+        if (permisosNecesarios.isNotEmpty()) {
+            permisosLauncher.launch(permisosNecesarios.toTypedArray())
+        }
     }
 
-    QrScannerContent(
-        permisoConcedido = permisoConcedido,
-        mensaje = mensaje,
-        procesando = procesando,
-        mostrarBannerExito = mostrarBannerExito,
-        onPedirPermiso = { lanzadorPermiso.launch(Manifest.permission.CAMERA) },
-        onAbrirAjustes = {
-            val intent = Intent(
-                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.fromParts("package", contexto.packageName, null)
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Text(
+            text = "Escáner QR",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(16.dp)
+        )
+
+        Text(
+            text = mensaje,
+            modifier = Modifier.padding(
+                horizontal = 16.dp,
+                vertical = 8.dp
             )
-            contexto.startActivity(intent)
-        },
-        onCodigoDetectado = { codigo ->
-            if (!procesando) {
-                procesando = true
-                viewModel.escanearCodigoQR(codigo) { resultado ->
-                    when (resultado) {
-                        is ResultadoEscaneo.Exito -> {
-                            mensaje = recursos.getString(
-                                R.string.escaner_exito,
-                                resultado.punto.puntosRecompensa,
-                                resultado.punto.titulo
-                            )
-                            // Activamos la visibilidad animada
-                            mostrarBannerExito = true
+        )
 
-                            alcance.launch {
-                                delay(1.8.seconds)
-                                mostrarBannerExito = false
-                                onVerVideo(resultado.punto.id)
-                                procesando = false
-                            }
-                        }
-                        is ResultadoEscaneo.YaVisitado -> {
-                            mensaje = recursos.getString(R.string.escaner_ya_visitado, resultado.punto.titulo)
-                            alcance.launch {
-                                delay(2.seconds)
-                                procesando = false
-                            }
-                        }
-                        ResultadoEscaneo.Invalido -> {
-                            mensaje = recursos.getString(R.string.escaner_invalido)
-                            alcance.launch {
-                                delay(2.seconds)
-                                procesando = false
-                            }
-                        }
-                    }
+        if (permisoCamara && permisoUbicacion) {
+            QrCameraPreview(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                onQrDetectado = { codigo ->
+                    mensaje = "Código QR detectado."
+                    resultadoDialogo = codigo
                 }
-            }
-        }
-    )
-}
-
-/** Versión "stateless": dibuja la interfaz, el loader y la animación del mensaje de puntos. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun QrScannerContent(
-    permisoConcedido: Boolean,
-    mensaje: String,
-    procesando: Boolean,
-    mostrarBannerExito: Boolean,
-    onPedirPermiso: () -> Unit,
-    onAbrirAjustes: () -> Unit,
-    onCodigoDetectado: (String) -> Unit
-) {
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.escaner_titulo)) }) }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            if (permisoConcedido) {
-                CamaraQr(
-                    onCodigoDetectado = onCodigoDetectado,
-                    modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Se necesitan permisos de cámara y ubicación."
                 )
+            }
 
-                // Loader cuando el escáner o el ViewModel están procesando
-                if (procesando && !mostrarBannerExito) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                // Animación dinámica activada mediante mostrarBannerExito
-                AnimatedVisibility(
-                    visible = mostrarBannerExito,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(24.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        tonalElevation = 8.dp
-                    ) {
-                        Text(
-                            text = mensaje,
-                            modifier = Modifier.padding(16.dp),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+            Button(
+                onClick = {
+                    permisosLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.CAMERA,
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
                         )
-                    }
-                }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.escaner_permiso_texto),
-                        textAlign = TextAlign.Center
                     )
-                    Button(onClick = onPedirPermiso) { Text(stringResource(R.string.escaner_permiso_boton)) }
-                    OutlinedButton(onClick = onAbrirAjustes) { Text(stringResource(R.string.escaner_ajustes_boton)) }
-                }
+                },
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text("Solicitar permisos")
             }
         }
     }
-}
 
-/** Vista previa de la cámara + lectura de QR con ML Kit. */
-@Composable
-private fun CamaraQr(
-    onCodigoDetectado: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val contexto = LocalContext.current
-    val ciclo = LocalLifecycleOwner.current
-    val alDetectar by rememberUpdatedState(onCodigoDetectado)
-
-    val controlador = remember { LifecycleCameraController(contexto) }
-
-    DisposableEffect(ciclo) {
-        val escaner = BarcodeScanning.getClient(
-            BarcodeScannerOptions.Builder()
-                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-                .build()
-        )
-        val ejecutor = ContextCompat.getMainExecutor(contexto)
-
-        controlador.setImageAnalysisAnalyzer(
-            ejecutor,
-            MlKitAnalyzer(
-                listOf(escaner),
-                ImageAnalysis.COORDINATE_SYSTEM_VIEW_REFERENCED,
-                ejecutor
-            ) { resultado: MlKitAnalyzer.Result? ->
-                val codigo = resultado?.getValue(escaner)?.firstOrNull()?.rawValue
-                if (codigo != null) alDetectar(codigo)
+    resultadoDialogo?.let { codigo ->
+        AlertDialog(
+            onDismissRequest = {
+                resultadoDialogo = null
+                mensaje = "Apunta la cámara al código QR."
+            },
+            title = {
+                Text("Código QR detectado")
+            },
+            text = {
+                Text(
+                    "Contenido leído:\n$codigo\n\n" +
+                            "La visita debe validarse con el repositorio " +
+                            "antes de otorgar puntos."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        resultadoDialogo = null
+                        mensaje = "Apunta la cámara al siguiente código QR."
+                    }
+                ) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        resultadoDialogo = null
+                        mensaje = "Apunta la cámara al siguiente código QR."
+                    }
+                ) {
+                    Text("Cerrar")
+                }
             }
         )
-        controlador.bindToLifecycle(ciclo)
+    }
+}
 
+@Composable
+private fun QrCameraPreview(
+    modifier: Modifier = Modifier,
+    onQrDetectado: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val cameraExecutor = remember {
+        Executors.newSingleThreadExecutor()
+    }
+
+    val scanner = remember {
+        val options = BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+            .build()
+
+        BarcodeScanning.getClient(options)
+    }
+
+    val qrProcesado = remember {
+        AtomicBoolean(false)
+    }
+
+    DisposableEffect(cameraExecutor, scanner) {
         onDispose {
-            controlador.clearImageAnalysisAnalyzer()
-            controlador.unbind()
-            escaner.close()
+            cameraExecutor.shutdown()
+            scanner.close()
         }
     }
 
     AndroidView(
         modifier = modifier,
-        factory = { ctx ->
-            PreviewView(ctx).apply { this.controller = controlador }
+        factory = { viewContext ->
+            val previewView = PreviewView(viewContext).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+            }
+
+            val cameraProviderFuture =
+                ProcessCameraProvider.getInstance(viewContext)
+
+            cameraProviderFuture.addListener(
+                {
+                    try {
+                        val cameraProvider = cameraProviderFuture.get()
+
+                        val preview = Preview.Builder()
+                            .build()
+                            .also {
+                                it.surfaceProvider = previewView.surfaceProvider
+                            }
+
+                        val analysis = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(
+                                ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST
+                            )
+                            .build()
+
+                        analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                            analizarImagenQr(
+                                imageProxy = imageProxy,
+                                scanner = scanner,
+                                qrProcesado = qrProcesado,
+                                viewContext = viewContext,
+                                onQrDetectado = onQrDetectado
+                            )
+                        }
+
+                        cameraProvider.unbindAll()
+
+                        cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            CameraSelector.DEFAULT_BACK_CAMERA,
+                            preview,
+                            analysis
+                        )
+                    } catch (exception: Exception) {
+                        qrProcesado.set(false)
+                    }
+                },
+                ContextCompat.getMainExecutor(viewContext)
+            )
+
+            previewView
         }
     )
+}
+
+@OptIn(markerClass = [ExperimentalGetImage::class])
+private fun analizarImagenQr(
+    imageProxy: ImageProxy,
+    scanner: BarcodeScanner,
+    qrProcesado: AtomicBoolean,
+    viewContext: Context,
+    onQrDetectado: (String) -> Unit
+) {
+    val mediaImage = imageProxy.image
+
+    if (mediaImage == null || qrProcesado.get()) {
+        imageProxy.close()
+        return
+    }
+
+    val image = try {
+        InputImage.fromMediaImage(
+            mediaImage,
+            imageProxy.imageInfo.rotationDegrees
+        )
+    } catch (exception: Exception) {
+        imageProxy.close()
+        return
+    }
+
+    scanner.process(image)
+        .addOnSuccessListener { barcodes ->
+            val codigo = barcodes
+                .firstOrNull { it.format == Barcode.FORMAT_QR_CODE }
+                ?.rawValue
+
+            if (
+                !codigo.isNullOrBlank() &&
+                qrProcesado.compareAndSet(false, true)
+            ) {
+                ContextCompat.getMainExecutor(viewContext).execute {
+                    onQrDetectado(codigo)
+                }
+            }
+        }
+        .addOnFailureListener {
+            // Si falla un fotograma, se continúa con los siguientes.
+        }
+        .addOnCompleteListener {
+            imageProxy.close()
+        }
+}
+
+private fun tienePermisoUbicacionQr(context: Context): Boolean {
+    val permisoPreciso = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    val permisoAproximado = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
+    return permisoPreciso || permisoAproximado
+}
+
+private fun obtenerUltimaUbicacionQr(
+    context: Context
+): UbicacionLeida? {
+    if (!tienePermisoUbicacionQr(context)) {
+        return null
+    }
+
+    return try {
+        val locationManager = context.getSystemService(
+            Context.LOCATION_SERVICE
+        ) as LocationManager
+
+        val proveedores = listOf(
+            LocationManager.GPS_PROVIDER,
+            LocationManager.NETWORK_PROVIDER
+        )
+
+        val ubicaciones = proveedores.mapNotNull { proveedor ->
+            try {
+                locationManager.getLastKnownLocation(proveedor)
+            } catch (exception: SecurityException) {
+                null
+            }
+        }
+
+        val ubicacion: Location =
+            ubicaciones.maxByOrNull { it.time } ?: return null
+
+        UbicacionLeida(
+            latitud = ubicacion.latitude,
+            longitud = ubicacion.longitude,
+            altitud = if (ubicacion.hasAltitude()) {
+                ubicacion.altitude
+            } else {
+                null
+            }
+        )
+    } catch (exception: Exception) {
+        null
+    }
 }

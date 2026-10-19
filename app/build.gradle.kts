@@ -69,4 +69,10 @@ dependencies {
     implementation(libs.osmdroid.android)
     implementation(libs.coil.compose)
 
+
+    implementation("androidx.preference:preference-ktx:1.2.1")
+    implementation("androidx.media3:media3-exoplayer:1.11.1")
+    implementation("androidx.media3:media3-ui:1.11.1")
+
+
 }

@@ -1,5 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AprendoIASantiago</string>
+
     <!-- Navegación -->
     <string name="nav_puntos">Puntos</string>
     <string name="nav_mapa">Mapa</string>
@@ -39,6 +41,8 @@
     <string name="escaner_permiso_texto">Necesitamos acceso a la cámara para leer los códigos QR</string>
     <string name="escaner_permiso_boton">Dar permiso</string>
     <string name="escaner_ajustes_boton">Abrir ajustes de la app</string>
+    <string name="escaner_fuera_rango">Estás a %2$.0f metros de %1$s. Acércate para validar la visita.</string>
+    <string name="escaner_sin_ubicacion">No se pudo obtener tu ubicación. Activa el GPS e inténtalo nuevamente.</string>
 
     <!-- Detalle de video -->
     <string name="detalle_titulo">Cápsula de IA</string>
@@ -89,5 +93,4 @@
     <string name="registro_confirmar_texto">¿Deseas guardar los datos ingresados?</string>
     <string name="registro_confirmar_si">Sí, guardar</string>
     <string name="registro_confirmar_no">Cancelar</string>
-
 </resources>
