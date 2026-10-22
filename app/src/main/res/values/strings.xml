@@ -93,4 +93,45 @@
     <string name="registro_confirmar_texto">¿Deseas guardar los datos ingresados?</string>
     <string name="registro_confirmar_si">Sí, guardar</string>
     <string name="registro_confirmar_no">Cancelar</string>
+
+    <!-- Bienvenida -->
+    <string name="bienvenida_titulo">Aprendo IA Jugando en Santiago</string>
+    <string name="bienvenida_descripcion">Descubre, aprende y gana puntos escaneando códigos QR en la ciudad</string>
+    <string name="bienvenida_item_videos">Aprende con videos cortos</string>
+    <string name="bienvenida_item_lugares">Recorre lugares icónicos</string>
+    <string name="bienvenida_item_puntos">Gana puntos y desbloquea desafíos</string>
+    <string name="bienvenida_comenzar">Comenzar</string>
+    <string name="bienvenida_tengo_cuenta">Ya tengo una cuenta</string>
+
+    <!-- Selección de jugador -->
+    <string name="seleccion_titulo">Selecciona tu jugador</string>
+    <string name="seleccion_nuevo">Crear nuevo jugador</string>
+    <string name="seleccion_alias">Alias: %1$s</string>
+    <string name="login_titulo">Ingresa tu contraseña</string>
+    <string name="login_para">Jugador: %1$s</string>
+    <string name="login_contrasena_label">Contraseña</string>
+    <string name="login_entrar">Entrar</string>
+    <string name="login_cancelar">Cancelar</string>
+    <string name="login_error">Contraseña incorrecta</string>
+
+    <!-- Registro de jugador -->
+    <string name="registro_jugador_titulo">Crear nuevo jugador</string>
+    <string name="registro_jugador_subtitulo">Únete a la comunidad de jugadores</string>
+    <string name="registro_nombre_label">Nombre completo</string>
+    <string name="registro_telefono_label">Teléfono</string>
+    <string name="registro_contrasena_label">Contraseña</string>
+    <string name="registro_direccion_label">Dirección (opcional)</string>
+    <string name="registro_avatar_label">Selecciona tu avatar</string>
+    <string name="registro_crear">Crear jugador</string>
+
+    <!-- Errores de formulario -->
+    <string name="error_telefono_obligatorio">El teléfono es obligatorio</string>
+    <string name="error_telefono_invalido">Ingresa un teléfono válido (8 a 12 dígitos)</string>
+    <string name="error_contrasena_obligatoria">La contraseña es obligatoria</string>
+    <string name="error_contrasena_min">Mínimo 4 caracteres</string>
+    <string name="error_correo_duplicado">Ya existe un jugador con ese correo</string>
+
+    <!-- Sesión -->
+    <string name="cerrar_sesion">Cerrar sesión</string>
+    <string name="avatar_descripcion">Avatar</string>
 </resources>

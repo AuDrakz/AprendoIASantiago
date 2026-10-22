@@ -13,6 +13,7 @@ class AprendoIaViewModelFactory(
         modelClass.isAssignableFrom(PuntosViewModel::class.java) -> PuntosViewModel(repositorio)
         modelClass.isAssignableFrom(PerfilViewModel::class.java) -> PerfilViewModel(repositorio)
         modelClass.isAssignableFrom(EscanerViewModel::class.java) -> EscanerViewModel(repositorio)
+        modelClass.isAssignableFrom(SesionViewModel::class.java) -> SesionViewModel(repositorio)
         else -> throw IllegalArgumentException("ViewModel desconocido: ${modelClass.name}")
     } as T
 }

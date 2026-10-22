@@ -1,4 +1,3 @@
-
 package com.aprendoiasantiago.data.local
 
 import androidx.room.Dao
@@ -9,39 +8,46 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface PuntoDao {
+interface PerfilDao {
 
-    @Query("SELECT * FROM puntos ORDER BY id")
-    fun observarPuntos(): Flow<List<PuntoEntity>>
+    @Query("SELECT * FROM perfil WHERE id = :id")
+    fun observarPerfil(id: Int): Flow<PerfilEntity?>
 
-    @Query("SELECT COUNT(*) FROM puntos")
+    @Query(
+        """
+        SELECT * FROM perfil
+        ORDER BY CASE rol WHEN 'ADMINISTRADOR' THEN 0 WHEN 'GENERADOR' THEN 1 ELSE 2 END,
+                 nombreUsuario
+        """
+    )
+    fun observarJugadores(): Flow<List<PerfilEntity>>
+
+    @Query("SELECT * FROM perfil WHERE id = :id")
+    suspend fun buscarPorId(id: Int): PerfilEntity?
+
+    @Query("SELECT COUNT(*) FROM perfil")
     suspend fun contar(): Int
 
-    @Query("SELECT * FROM puntos WHERE codigoQR = :codigo LIMIT 1")
-    suspend fun buscarPorQr(codigo: String): PuntoEntity?
+    @Query("SELECT COUNT(*) FROM perfil WHERE LOWER(email) = LOWER(:email) AND id != :excluirId")
+    suspend fun contarPorEmail(email: String, excluirId: Int): Int
 
-    @Query("""
-        UPDATE puntos
-        SET fueVisitado = 1,
-            fechaVisita = :fecha,
-            altitudVisita = :altitud
-        WHERE id = :id AND fueVisitado = 0
-    """)
-    suspend fun marcarVisitado(
-        id: Int,
-        fecha: String,
-        altitud: Double?
-    ): Int
-
-    @Query("UPDATE puntos SET selfieRuta = :ruta WHERE id = :id")
-    suspend fun guardarSelfie(id: Int, ruta: String)
-
-    @Query("SELECT selfieRuta FROM puntos WHERE id = :id")
-    suspend fun selfieActual(id: Int): String?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarTodos(puntos: List<PuntoEntity>)
+    @Insert
+    suspend fun insertar(perfil: PerfilEntity): Long
 
     @Update
-    suspend fun actualizar(punto: PuntoEntity)
+    suspend fun actualizar(perfil: PerfilEntity)
+
+    // --- Sesión: una sola fila con el jugador activo ---
+
+    @Query("SELECT jugadorId FROM sesion WHERE id = 1")
+    fun observarSesion(): Flow<Int?>
+
+    @Query("SELECT jugadorId FROM sesion WHERE id = 1")
+    suspend fun sesionActual(): Int?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun guardarSesion(sesion: SesionEntity)
+
+    @Query("DELETE FROM sesion")
+    suspend fun cerrarSesion()
 }

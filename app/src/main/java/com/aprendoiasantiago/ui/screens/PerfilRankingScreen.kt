@@ -12,9 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -22,7 +25,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -39,7 +41,7 @@ import com.aprendoiasantiago.R
 import com.aprendoiasantiago.data.local.UserPreferencesRepository
 import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
-import com.aprendoiasantiago.ui.components.ImagenInteligente
+import com.aprendoiasantiago.ui.components.AvatarJugador
 import com.aprendoiasantiago.viewmodel.PerfilViewModel
 import kotlinx.coroutines.launch
 
@@ -48,7 +50,7 @@ fun PerfilRankingScreen(
     viewModel: PerfilViewModel,
     userPreferencesRepository: UserPreferencesRepository,
     onEditarPerfil: () -> Unit,
-    onRegistro: () -> Unit
+    onCerrarSesion: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val altoContrasteActivo by userPreferencesRepository.modoAltoContraste.collectAsState(initial = false)
@@ -64,7 +66,7 @@ fun PerfilRankingScreen(
             }
         },
         onEditarPerfil = onEditarPerfil,
-        onRegistro = onRegistro
+        onCerrarSesion = onCerrarSesion
     )
 }
 
@@ -76,7 +78,7 @@ fun PerfilRankingContent(
     altoContrasteActivo: Boolean,
     onAltoContrasteCambiado: (Boolean) -> Unit,
     onEditarPerfil: () -> Unit,
-    onRegistro: () -> Unit
+    onCerrarSesion: () -> Unit
 ) {
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -93,7 +95,7 @@ fun PerfilRankingContent(
                     altoContrasteActivo = altoContrasteActivo,
                     onAltoContrasteCambiado = onAltoContrasteCambiado,
                     onEditarPerfil = onEditarPerfil,
-                    onRegistro = onRegistro
+                    onCerrarSesion = onCerrarSesion
                 )
             }
             item {
@@ -121,7 +123,7 @@ private fun TarjetaResumen(
     altoContrasteActivo: Boolean,
     onAltoContrasteCambiado: (Boolean) -> Unit,
     onEditarPerfil: () -> Unit,
-    onRegistro: () -> Unit
+    onCerrarSesion: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -132,10 +134,10 @@ private fun TarjetaResumen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ImagenInteligente(
-                    ruta = perfil.fotoRuta,
-                    tamano = 72.dp,
-                    descripcion = stringResource(R.string.foto_perfil)
+                AvatarJugador(
+                    indice = perfil.avatar,
+                    fotoRuta = perfil.fotoRuta,
+                    tamano = 72.dp
                 )
                 Column {
                     Text(perfil.nombreUsuario, style = MaterialTheme.typography.headlineSmall)
@@ -177,8 +179,12 @@ private fun TarjetaResumen(
             OutlinedButton(onClick = onEditarPerfil, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.editar_perfil))
             }
-            TextButton(onClick = onRegistro, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.registro_titulo))
+            OutlinedButton(onClick = onCerrarSesion, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
+                Text(
+                    text = stringResource(R.string.cerrar_sesion),
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
         }
     }

@@ -54,7 +54,6 @@ fun EditarPerfilScreen(
             textoBoton = R.string.editar_guardar,
             onNombre = viewModel::onNombreCambia,
             onEmail = viewModel::onEmailCambia,
-            onRol = viewModel::onRolCambia,
             onFoto = viewModel::onFotoCambia,
             onGuardar = { viewModel.guardarFormulario(onVolver) },
             modifier = Modifier.fillMaxSize().padding(innerPadding)
