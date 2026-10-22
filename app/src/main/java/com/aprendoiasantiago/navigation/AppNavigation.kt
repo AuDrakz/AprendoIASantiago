@@ -1,14 +1,18 @@
 package com.aprendoiasantiago.navigation
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -20,6 +24,8 @@ import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -33,16 +39,23 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.aprendoiasantiago.R
 import com.aprendoiasantiago.data.local.UserPreferencesRepository
+import com.aprendoiasantiago.model.Rol
+import com.aprendoiasantiago.ui.screens.BienvenidaScreen
 import com.aprendoiasantiago.ui.screens.DetalleVideoScreen
 import com.aprendoiasantiago.ui.screens.EditarPerfilScreen
+import com.aprendoiasantiago.ui.screens.GestionJugadoresScreen
+import com.aprendoiasantiago.ui.screens.GestionPuntosScreen
 import com.aprendoiasantiago.ui.screens.ListaPuntosScreen
 import com.aprendoiasantiago.ui.screens.MapaScreen
 import com.aprendoiasantiago.ui.screens.PerfilRankingScreen
 import com.aprendoiasantiago.ui.screens.QrScannerScreen
-import com.aprendoiasantiago.ui.screens.RegistroScreen
+import com.aprendoiasantiago.ui.screens.RegistroJugadorScreen
+import com.aprendoiasantiago.ui.screens.SeleccionJugadorScreen
 import com.aprendoiasantiago.viewmodel.EscanerViewModel
+import com.aprendoiasantiago.viewmodel.EstadoSesion
 import com.aprendoiasantiago.viewmodel.PerfilViewModel
 import com.aprendoiasantiago.viewmodel.PuntosViewModel
+import com.aprendoiasantiago.viewmodel.SesionViewModel
 
 private data class ItemBarra(
     val screen: Screen,
@@ -50,7 +63,8 @@ private data class ItemBarra(
     val icono: ImageVector
 )
 
-private val itemsBarra = listOf(
+/** Cliente: la experiencia de juego. */
+private val itemsCliente = listOf(
     ItemBarra(
         Screen.ListaPuntos,
         R.string.nav_puntos,
@@ -73,15 +87,156 @@ private val itemsBarra = listOf(
     )
 )
 
+/** Administrador: gestiona puntos QR y jugadores. */
+private val itemsAdministrador = listOf(
+    ItemBarra(
+        Screen.GestionPuntos,
+        R.string.nav_gestion_puntos,
+        Icons.Filled.Edit
+    ),
+    ItemBarra(
+        Screen.GestionJugadores,
+        R.string.nav_gestion_jugadores,
+        Icons.Filled.AccountBox
+    ),
+    ItemBarra(
+        Screen.Mapa,
+        R.string.nav_mapa,
+        Icons.Filled.Place
+    ),
+    ItemBarra(
+        Screen.Perfil,
+        R.string.nav_perfil,
+        Icons.Filled.Person
+    )
+)
+
+/** Creador de contenido: gestiona las cápsulas de video. */
+private val itemsGenerador = listOf(
+    ItemBarra(
+        Screen.GestionPuntos,
+        R.string.nav_gestion_capsulas,
+        Icons.Filled.Edit
+    ),
+    ItemBarra(
+        Screen.Mapa,
+        R.string.nav_mapa,
+        Icons.Filled.Place
+    ),
+    ItemBarra(
+        Screen.Perfil,
+        R.string.nav_perfil,
+        Icons.Filled.Person
+    )
+)
+
+private fun itemsPara(rol: Rol): List<ItemBarra> = when (rol) {
+    Rol.CLIENTE -> itemsCliente
+    Rol.ADMINISTRADOR -> itemsAdministrador
+    Rol.GENERADOR -> itemsGenerador
+}
+
+private fun rutaInicialPara(rol: Rol): String = when (rol) {
+    Rol.CLIENTE -> Screen.ListaPuntos.route
+    Rol.ADMINISTRADOR, Rol.GENERADOR -> Screen.GestionPuntos.route
+}
+
+/** Punto de entrada: decide entre el flujo de acceso y la app según la sesión. */
 @Composable
 fun AppNavigation(
     puntosViewModel: PuntosViewModel,
     perfilViewModel: PerfilViewModel,
     escanerViewModel: EscanerViewModel,
+    sesionViewModel: SesionViewModel,
+    userPreferencesRepository: UserPreferencesRepository,
+    windowSizeClass: WindowSizeClass
+) {
+    val estado by sesionViewModel.estado.collectAsStateWithLifecycle()
+    val estadoActual = estado
+
+    when (estadoActual) {
+        EstadoSesion.Cargando -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        EstadoSesion.SinSesion -> {
+            NavegacionAcceso(sesionViewModel = sesionViewModel)
+        }
+
+        is EstadoSesion.ConSesion -> {
+            // key(rol): al cambiar de rol se reconstruye la navegación desde cero
+            key(estadoActual.rol) {
+                NavegacionPrincipal(
+                    rol = estadoActual.rol,
+                    puntosViewModel = puntosViewModel,
+                    perfilViewModel = perfilViewModel,
+                    escanerViewModel = escanerViewModel,
+                    sesionViewModel = sesionViewModel,
+                    userPreferencesRepository = userPreferencesRepository,
+                    windowSizeClass = windowSizeClass
+                )
+            }
+        }
+    }
+}
+
+/** Bienvenida → Selección de jugador → Registro. Sin barra de navegación. */
+@Composable
+private fun NavegacionAcceso(sesionViewModel: SesionViewModel) {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Bienvenida.route
+    ) {
+        composable(Screen.Bienvenida.route) {
+            BienvenidaScreen(
+                onComenzar = {
+                    navController.navigate(Screen.SeleccionJugador.route)
+                }
+            )
+        }
+
+        composable(Screen.SeleccionJugador.route) {
+            SeleccionJugadorScreen(
+                viewModel = sesionViewModel,
+                onCrearJugador = {
+                    navController.navigate(Screen.RegistroJugador.route)
+                },
+                onVolver = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.RegistroJugador.route) {
+            RegistroJugadorScreen(
+                viewModel = sesionViewModel,
+                onVolver = {
+                    navController.popBackStack()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun NavegacionPrincipal(
+    rol: Rol,
+    puntosViewModel: PuntosViewModel,
+    perfilViewModel: PerfilViewModel,
+    escanerViewModel: EscanerViewModel,
+    sesionViewModel: SesionViewModel,
     userPreferencesRepository: UserPreferencesRepository,
     windowSizeClass: WindowSizeClass
 ) {
     val navController = rememberNavController()
+    val items = itemsPara(rol)
 
     val entradaActual by navController.currentBackStackEntryAsState()
     val rutaActual = entradaActual?.destination?.route
@@ -99,9 +254,11 @@ fun AppNavigation(
     val navHost: @Composable (Modifier) -> Unit = { modifier ->
         AppNavHost(
             navController = navController,
+            rol = rol,
             puntosViewModel = puntosViewModel,
             perfilViewModel = perfilViewModel,
             escanerViewModel = escanerViewModel,
+            sesionViewModel = sesionViewModel,
             userPreferencesRepository = userPreferencesRepository,
             modifier = modifier
         )
@@ -110,7 +267,7 @@ fun AppNavigation(
     if (windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded) {
         Row(Modifier.fillMaxSize()) {
             NavigationRail {
-                itemsBarra.forEach { item ->
+                items.forEach { item ->
                     NavigationRailItem(
                         selected = rutaActual == item.screen.route,
                         onClick = {
@@ -136,7 +293,7 @@ fun AppNavigation(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             bottomBar = {
                 NavigationBar {
-                    itemsBarra.forEach { item ->
+                    items.forEach { item ->
                         NavigationBarItem(
                             selected = rutaActual == item.screen.route,
                             onClick = {
@@ -168,17 +325,21 @@ fun AppNavigation(
 @Composable
 private fun AppNavHost(
     navController: NavHostController,
+    rol: Rol,
     puntosViewModel: PuntosViewModel,
     perfilViewModel: PerfilViewModel,
     escanerViewModel: EscanerViewModel,
+    sesionViewModel: SesionViewModel,
     userPreferencesRepository: UserPreferencesRepository,
     modifier: Modifier
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.ListaPuntos.route,
+        startDestination = rutaInicialPara(rol),
         modifier = modifier
     ) {
+        // --- Vistas del Cliente ---
+
         composable(Screen.ListaPuntos.route) {
             ListaPuntosScreen(
                 viewModel = puntosViewModel,
@@ -193,10 +354,10 @@ private fun AppNavHost(
             )
         }
 
-        composable(Screen.Mapa.route) {
-            MapaScreen(
-                viewModel = puntosViewModel,
-                onVerDetalle = { puntoId ->
+        composable(Screen.ScannerQR.route) {
+            QrScannerScreen(
+                viewModel = escanerViewModel,
+                onVerVideo = { puntoId ->
                     navController.navigate(
                         Screen.DetalleVideo.crearRuta(puntoId)
                     )
@@ -204,10 +365,25 @@ private fun AppNavHost(
             )
         }
 
-        composable(Screen.ScannerQR.route) {
-            QrScannerScreen(
-                viewModel = escanerViewModel,
-                onVerVideo = { puntoId ->
+        // --- Vistas de Administrador y Creador de Contenido ---
+
+        composable(Screen.GestionPuntos.route) {
+            GestionPuntosScreen(
+                esAdmin = rol == Rol.ADMINISTRADOR,
+                viewModel = puntosViewModel
+            )
+        }
+
+        composable(Screen.GestionJugadores.route) {
+            GestionJugadoresScreen(viewModel = sesionViewModel)
+        }
+
+        // --- Compartidas por los tres roles ---
+
+        composable(Screen.Mapa.route) {
+            MapaScreen(
+                viewModel = puntosViewModel,
+                onVerDetalle = { puntoId ->
                     navController.navigate(
                         Screen.DetalleVideo.crearRuta(puntoId)
                     )
@@ -251,23 +427,12 @@ private fun AppNavHost(
                 onEditarPerfil = {
                     navController.navigate(Screen.EditarPerfil.route)
                 },
-                onRegistro = {
-                    navController.navigate(Screen.Registro.route)
-                }
+                onCerrarSesion = sesionViewModel::cerrarSesion
             )
         }
 
         composable(Screen.EditarPerfil.route) {
             EditarPerfilScreen(
-                viewModel = perfilViewModel,
-                onVolver = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        composable(Screen.Registro.route) {
-            RegistroScreen(
                 viewModel = perfilViewModel,
                 onVolver = {
                     navController.popBackStack()

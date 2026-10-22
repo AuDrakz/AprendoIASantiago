@@ -5,17 +5,22 @@ import com.aprendoiasantiago.data.local.PerfilEntity
 import com.aprendoiasantiago.data.local.PuntoDao
 import com.aprendoiasantiago.data.local.RankingDao
 import com.aprendoiasantiago.data.local.RankingEntity
+import com.aprendoiasantiago.data.local.SesionEntity
 import com.aprendoiasantiago.data.local.toEntity
 import com.aprendoiasantiago.data.local.toModel
 import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.model.PuntoInteres
-import com.aprendoiasantiago.model.Rol
 import com.aprendoiasantiago.model.ResultadoEscaneo
+import com.aprendoiasantiago.model.Rol
 import com.aprendoiasantiago.util.ArchivosFoto
+import com.aprendoiasantiago.util.Seguridad
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -38,25 +43,41 @@ class PuntoRepository(
             lista.map { it.toModel() }
         }
 
-    val perfil: Flow<PerfilUsuario> = combine(
-        perfilDao.observarPerfil(PERFIL_ID).filterNotNull(),
-        puntoDao.observarPuntos()
-    ) { perfilGuardado, listaPuntos ->
+    /** Perfil del jugador con la sesión abierta (id = 0 si no hay sesión). */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val perfil: Flow<PerfilUsuario> = perfilDao.observarSesion().flatMapLatest { jugadorId ->
+        if (jugadorId == null) {
+            flowOf(PerfilUsuario(id = 0, nombreUsuario = "", email = ""))
+        } else {
+            combine(
+                perfilDao.observarPerfil(jugadorId).filterNotNull(),
+                puntoDao.observarPuntos()
+            ) { perfilGuardado, listaPuntos ->
+                val visitados = listaPuntos.filter { it.fueVisitado }
 
-        val visitados = listaPuntos.filter { it.fueVisitado }
-
-        PerfilUsuario(
-            id = perfilGuardado.id,
-            nombreUsuario = perfilGuardado.nombreUsuario,
-            email = perfilGuardado.email,
-            rol = perfilGuardado.rol,
-            fotoRuta = perfilGuardado.fotoRuta,
-            puntosTotales = visitados.sumOf {
-                it.puntosRecompensa
-            },
-            lugaresDescubiertos = visitados.size
-        )
+                perfilGuardado.toModel(
+                    puntosTotales = visitados.sumOf { it.puntosRecompensa },
+                    lugaresDescubiertos = visitados.size
+                )
+            }
+        }
     }
+
+    /** Jugador con la sesión abierta, o null si no hay sesión. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val jugadorActivo: Flow<PerfilUsuario?> = perfilDao.observarSesion().flatMapLatest { jugadorId ->
+        if (jugadorId == null) {
+            flowOf(null)
+        } else {
+            perfilDao.observarPerfil(jugadorId).map { it?.toModel() }
+        }
+    }
+
+    /** Todos los jugadores del dispositivo (para la pantalla de selección). */
+    val jugadores: Flow<List<PerfilUsuario>> =
+        perfilDao.observarJugadores().map { lista ->
+            lista.map { it.toModel() }
+        }
 
     suspend fun sembrarDatosIniciales() {
         if (puntoDao.contar() == 0) {
@@ -79,12 +100,26 @@ class PuntoRepository(
             )
         }
 
+        // Cuentas en duro exigidas por el caso: Administrador y Creador de Contenido
         if (perfilDao.contar() == 0) {
-            perfilDao.guardar(
+            perfilDao.insertar(
                 PerfilEntity(
-                    PERFIL_ID,
-                    "EstudianteIA",
-                    "estudiante@duoc.cl"
+                    nombreUsuario = "Administrador",
+                    alias = "Admin",
+                    email = "admin@aprendoia.cl",
+                    avatar = 5,
+                    contrasenaHash = Seguridad.hashear("123"),
+                    rol = Rol.ADMINISTRADOR
+                )
+            )
+            perfilDao.insertar(
+                PerfilEntity(
+                    nombreUsuario = "Contenido",
+                    alias = "GenCont",
+                    email = "contenido@aprendoia.cl",
+                    avatar = 4,
+                    contrasenaHash = Seguridad.hashear("123"),
+                    rol = Rol.GENERADOR
                 )
             )
         }
@@ -100,27 +135,120 @@ class PuntoRepository(
         }
     }
 
+    /** Crea un Cliente y abre su sesión. Devuelve false si el correo ya existe. */
+    suspend fun registrarJugador(
+        nombre: String,
+        email: String,
+        telefono: String,
+        direccion: String,
+        avatar: Int,
+        contrasena: String
+    ): Boolean {
+        if (perfilDao.contarPorEmail(email.trim(), excluirId = 0) > 0) return false
+
+        val id = perfilDao.insertar(
+            PerfilEntity(
+                nombreUsuario = nombre.trim(),
+                email = email.trim(),
+                telefono = telefono.trim(),
+                direccion = direccion.trim(),
+                avatar = avatar,
+                contrasenaHash = Seguridad.hashear(contrasena)
+            )
+        )
+        perfilDao.guardarSesion(SesionEntity(jugadorId = id.toInt()))
+        return true
+    }
+
+    /** Abre la sesión si la contraseña es correcta. */
+    suspend fun iniciarSesion(jugadorId: Int, contrasena: String): Boolean {
+        val jugador = perfilDao.buscarPorId(jugadorId) ?: return false
+        if (!Seguridad.verificar(contrasena, jugador.contrasenaHash)) return false
+
+        perfilDao.guardarSesion(SesionEntity(jugadorId = jugadorId))
+        return true
+    }
+
+    suspend fun cerrarSesion() = perfilDao.cerrarSesion()
+
+    // --- Gestión (Administrador y Creador de Contenido) ---
+
+    /**
+     * Crea (id = 0) o actualiza un punto.
+     * Devuelve false si el código QR ya lo usa otro punto.
+     */
+    suspend fun guardarPunto(punto: PuntoInteres): Boolean {
+        val qr = punto.codigoQR.trim()
+        val existente = puntoDao.buscarPorQr(qr)
+        if (existente != null && existente.id != punto.id) return false
+
+        if (punto.id == 0) {
+            puntoDao.insertar(
+                punto.copy(id = puntoDao.maxId() + 1, codigoQR = qr).toEntity()
+            )
+        } else {
+            puntoDao.actualizar(punto.copy(codigoQR = qr).toEntity())
+        }
+        return true
+    }
+
+    suspend fun eliminarPunto(id: Int) {
+        val selfie = puntoDao.selfieActual(id)
+        puntoDao.eliminar(id)
+        ArchivosFoto.borrar(selfie)
+    }
+
+    /** Solo se pueden eliminar Clientes; las cuentas en duro quedan protegidas. */
+    suspend fun eliminarJugador(id: Int) {
+        val jugador = perfilDao.buscarPorId(id) ?: return
+        if (jugador.rol != Rol.CLIENTE) return
+
+        perfilDao.eliminar(id)
+        ArchivosFoto.borrar(jugador.fotoRuta)
+    }
+
+    /** Edita nombre y correo de un Cliente. Devuelve false si el correo ya lo usa otro. */
+    suspend fun actualizarJugador(
+        id: Int,
+        nombreUsuario: String,
+        email: String
+    ): Boolean {
+        val actual = perfilDao.buscarPorId(id) ?: return false
+        if (actual.rol != Rol.CLIENTE) return false
+        if (perfilDao.contarPorEmail(email.trim(), id) > 0) return false
+
+        perfilDao.actualizar(
+            actual.copy(
+                nombreUsuario = nombreUsuario.trim(),
+                email = email.trim()
+            )
+        )
+        return true
+    }
+
+    /** Actualiza al jugador activo. Devuelve false si el correo ya lo usa otro jugador. */
     suspend fun actualizarPerfil(
         nombreUsuario: String,
         email: String,
-        rol: Rol,
         fotoRuta: String?
-    ) {
-        val anterior = perfilDao.fotoActual(PERFIL_ID)
+    ): Boolean {
+        val jugadorId = perfilDao.sesionActual() ?: return false
+        val actual = perfilDao.buscarPorId(jugadorId) ?: return false
 
-        perfilDao.guardar(
-            PerfilEntity(
-                PERFIL_ID,
-                nombreUsuario.trim(),
-                email.trim(),
-                rol,
-                fotoRuta
+        if (perfilDao.contarPorEmail(email.trim(), jugadorId) > 0) return false
+
+        perfilDao.actualizar(
+            actual.copy(
+                nombreUsuario = nombreUsuario.trim(),
+                email = email.trim(),
+                fotoRuta = fotoRuta
             )
         )
 
-        if (anterior != fotoRuta) {
-            ArchivosFoto.borrar(anterior)
+        if (actual.fotoRuta != fotoRuta) {
+            ArchivosFoto.borrar(actual.fotoRuta)
         }
+        return true
     }
 
     suspend fun guardarSelfie(
@@ -239,7 +367,6 @@ class PuntoRepository(
 
     private companion object {
 
-        const val PERFIL_ID = 1
         const val RADIO_MAXIMO_METROS = 50.0
 
         val puntosIniciales = listOf(

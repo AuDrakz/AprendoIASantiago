@@ -1,4 +1,3 @@
-
 package com.aprendoiasantiago
 
 import android.Manifest
@@ -25,6 +24,7 @@ import com.aprendoiasantiago.viewmodel.AprendoIaViewModelFactory
 import com.aprendoiasantiago.viewmodel.EscanerViewModel
 import com.aprendoiasantiago.viewmodel.PerfilViewModel
 import com.aprendoiasantiago.viewmodel.PuntosViewModel
+import com.aprendoiasantiago.viewmodel.SesionViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -124,10 +124,14 @@ class MainActivity : ComponentActivity() {
                 val escanerViewModel: EscanerViewModel =
                     viewModel(factory = fabrica)
 
+                val sesionViewModel: SesionViewModel =
+                    viewModel(factory = fabrica)
+
                 AppNavigation(
                     puntosViewModel = puntosViewModel,
                     perfilViewModel = perfilViewModel,
                     escanerViewModel = escanerViewModel,
+                    sesionViewModel = sesionViewModel,
                     userPreferencesRepository = userPreferencesRepository,
                     windowSizeClass =
                         androidx.compose.material3.windowsizeclass
