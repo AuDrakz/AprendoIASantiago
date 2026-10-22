@@ -101,10 +101,10 @@
     <string name="bienvenida_item_lugares">Recorre lugares icónicos</string>
     <string name="bienvenida_item_puntos">Gana puntos y desbloquea desafíos</string>
     <string name="bienvenida_comenzar">Comenzar</string>
-    <string name="bienvenida_tengo_cuenta">Ya tengo una cuenta</string>
 
     <!-- Selección de jugador -->
     <string name="seleccion_titulo">Selecciona tu jugador</string>
+    <string name="seleccion_subtitulo">Elige quién va a jugar</string>
     <string name="seleccion_nuevo">Crear nuevo jugador</string>
     <string name="seleccion_alias">Alias: %1$s</string>
     <string name="login_titulo">Ingresa tu contraseña</string>

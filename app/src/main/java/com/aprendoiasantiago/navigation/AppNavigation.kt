@@ -132,9 +132,6 @@ private fun NavegacionAcceso(sesionViewModel: SesionViewModel) {
             BienvenidaScreen(
                 onComenzar = {
                     navController.navigate(Screen.SeleccionJugador.route)
-                },
-                onYaTengoCuenta = {
-                    navController.navigate(Screen.SeleccionJugador.route)
                 }
             )
         }
