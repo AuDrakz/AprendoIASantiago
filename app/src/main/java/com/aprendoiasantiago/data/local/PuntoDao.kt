@@ -8,46 +8,47 @@ import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface PerfilDao {
+interface PuntoDao {
 
-    @Query("SELECT * FROM perfil WHERE id = :id")
-    fun observarPerfil(id: Int): Flow<PerfilEntity?>
+    @Query("SELECT * FROM puntos")
+    fun observarPuntos(): Flow<List<PuntoEntity>>
 
-    @Query(
-        """
-        SELECT * FROM perfil
-        ORDER BY CASE rol WHEN 'ADMINISTRADOR' THEN 0 WHEN 'GENERADOR' THEN 1 ELSE 2 END,
-                 nombreUsuario
-        """
-    )
-    fun observarJugadores(): Flow<List<PerfilEntity>>
+    @Query("SELECT * FROM puntos WHERE id = :id LIMIT 1")
+    suspend fun buscarPorId(id: Int): PuntoEntity?
 
-    @Query("SELECT * FROM perfil WHERE id = :id")
-    suspend fun buscarPorId(id: Int): PerfilEntity?
+    @Query("SELECT * FROM puntos WHERE codigoQR = :qr LIMIT 1")
+    suspend fun buscarPorQr(qr: String): PuntoEntity?
 
-    @Query("SELECT COUNT(*) FROM perfil")
+    @Query("SELECT COUNT(*) FROM puntos")
     suspend fun contar(): Int
 
-    @Query("SELECT COUNT(*) FROM perfil WHERE LOWER(email) = LOWER(:email) AND id != :excluirId")
-    suspend fun contarPorEmail(email: String, excluirId: Int): Int
-
-    @Insert
-    suspend fun insertar(perfil: PerfilEntity): Long
-
-    @Update
-    suspend fun actualizar(perfil: PerfilEntity)
-
-    // --- Sesión: una sola fila con el jugador activo ---
-
-    @Query("SELECT jugadorId FROM sesion WHERE id = 1")
-    fun observarSesion(): Flow<Int?>
-
-    @Query("SELECT jugadorId FROM sesion WHERE id = 1")
-    suspend fun sesionActual(): Int?
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertar(punto: PuntoEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun guardarSesion(sesion: SesionEntity)
+    suspend fun insertarTodos(puntos: List<PuntoEntity>)
 
-    @Query("DELETE FROM sesion")
-    suspend fun cerrarSesion()
+    @Update
+    suspend fun actualizar(punto: PuntoEntity)
+
+    /**
+     * Marca el punto como visitado solo si aún no lo estaba.
+     * Devuelve el número de filas modificadas (0 si ya estaba visitado).
+     */
+    @Query(
+        """
+        UPDATE puntos
+        SET fueVisitado = 1,
+            fechaVisita = :fecha,
+            altitudVisita = :altitud
+        WHERE id = :id AND fueVisitado = 0
+        """
+    )
+    suspend fun marcarVisitado(id: Int, fecha: String, altitud: Double?): Int
+
+    @Query("SELECT selfieRuta FROM puntos WHERE id = :puntoId")
+    suspend fun selfieActual(puntoId: Int): String?
+
+    @Query("UPDATE puntos SET selfieRuta = :ruta WHERE id = :puntoId")
+    suspend fun guardarSelfie(puntoId: Int, ruta: String)
 }
