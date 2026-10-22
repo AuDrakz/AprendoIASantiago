@@ -22,6 +22,9 @@ interface PuntoDao {
     @Query("SELECT COUNT(*) FROM puntos")
     suspend fun contar(): Int
 
+    @Query("SELECT COALESCE(MAX(id), 0) FROM puntos")
+    suspend fun maxId(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertar(punto: PuntoEntity)
 
@@ -30,6 +33,9 @@ interface PuntoDao {
 
     @Update
     suspend fun actualizar(punto: PuntoEntity)
+
+    @Query("DELETE FROM puntos WHERE id = :id")
+    suspend fun eliminar(id: Int)
 
     /**
      * Marca el punto como visitado solo si aún no lo estaba.

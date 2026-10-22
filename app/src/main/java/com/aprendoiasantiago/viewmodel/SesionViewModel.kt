@@ -48,6 +48,24 @@ class SesionViewModel(
         viewModelScope.launch { repositorio.cerrarSesion() }
     }
 
+    // --- Gestión de jugadores (solo Administrador) ---
+
+    fun eliminarJugador(id: Int) {
+        viewModelScope.launch { repositorio.eliminarJugador(id) }
+    }
+
+    /** onResultado(false) = el correo ya lo usa otro jugador. */
+    fun actualizarJugador(
+        id: Int,
+        nombre: String,
+        email: String,
+        onResultado: (Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+            onResultado(repositorio.actualizarJugador(id, nombre, email))
+        }
+    }
+
     // --- Registro de Cliente ---
 
     fun limpiarRegistro() {

@@ -22,6 +22,12 @@ sealed class Screen(val route: String) {
 
     data object EditarPerfil : Screen("editar_perfil")
 
+    // --- Vistas por rol (Administrador y Creador de Contenido) ---
+
+    data object GestionPuntos : Screen("gestion_puntos")
+
+    data object GestionJugadores : Screen("gestion_jugadores")
+
     data object DetalleVideo : Screen("detalle_video/{puntoId}") {
 
         const val ARG_PUNTO_ID = "puntoId"

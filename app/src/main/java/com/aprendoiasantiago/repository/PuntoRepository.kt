@@ -157,6 +157,61 @@ class PuntoRepository(
 
     suspend fun cerrarSesion() = perfilDao.cerrarSesion()
 
+    // --- Gestión (Administrador y Creador de Contenido) ---
+
+    /**
+     * Crea (id = 0) o actualiza un punto.
+     * Devuelve false si el código QR ya lo usa otro punto.
+     */
+    suspend fun guardarPunto(punto: PuntoInteres): Boolean {
+        val qr = punto.codigoQR.trim()
+        val existente = puntoDao.buscarPorQr(qr)
+        if (existente != null && existente.id != punto.id) return false
+
+        if (punto.id == 0) {
+            puntoDao.insertar(
+                punto.copy(id = puntoDao.maxId() + 1, codigoQR = qr).toEntity()
+            )
+        } else {
+            puntoDao.actualizar(punto.copy(codigoQR = qr).toEntity())
+        }
+        return true
+    }
+
+    suspend fun eliminarPunto(id: Int) {
+        val selfie = puntoDao.selfieActual(id)
+        puntoDao.eliminar(id)
+        ArchivosFoto.borrar(selfie)
+    }
+
+    /** Solo se pueden eliminar Clientes; las cuentas en duro quedan protegidas. */
+    suspend fun eliminarJugador(id: Int) {
+        val jugador = perfilDao.buscarPorId(id) ?: return
+        if (jugador.rol != Rol.CLIENTE) return
+
+        perfilDao.eliminar(id)
+        ArchivosFoto.borrar(jugador.fotoRuta)
+    }
+
+    /** Edita nombre y correo de un Cliente. Devuelve false si el correo ya lo usa otro. */
+    suspend fun actualizarJugador(
+        id: Int,
+        nombreUsuario: String,
+        email: String
+    ): Boolean {
+        val actual = perfilDao.buscarPorId(id) ?: return false
+        if (actual.rol != Rol.CLIENTE) return false
+        if (perfilDao.contarPorEmail(email.trim(), id) > 0) return false
+
+        perfilDao.actualizar(
+            actual.copy(
+                nombreUsuario = nombreUsuario.trim(),
+                email = email.trim()
+            )
+        )
+        return true
+    }
+
     /** Actualiza al jugador activo. Devuelve false si el correo ya lo usa otro jugador. */
     suspend fun actualizarPerfil(
         nombreUsuario: String,

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Barra de navegación por rol -->
+    <string name="nav_gestion_puntos">Puntos QR</string>
+    <string name="nav_gestion_capsulas">Cápsulas</string>
+    <string name="nav_gestion_jugadores">Jugadores</string>
+
+    <!-- Títulos -->
+    <string name="gestion_puntos_titulo">Gestión de puntos QR</string>
+    <string name="gestion_capsulas_titulo">Gestión de cápsulas</string>
+    <string name="gestion_jugadores_titulo">Jugadores registrados</string>
+    <string name="gestion_sin_jugadores">Aún no hay jugadores registrados</string>
+
+    <!-- Acciones -->
+    <string name="gestion_agregar_punto">Agregar punto</string>
+    <string name="gestion_nuevo_punto">Nuevo punto QR</string>
+    <string name="gestion_editar_punto">Editar punto</string>
+    <string name="gestion_editar_capsula">Editar cápsula</string>
+    <string name="gestion_editar_jugador">Editar jugador</string>
+    <string name="gestion_editar">Editar</string>
+    <string name="gestion_eliminar">Eliminar</string>
+    <string name="gestion_guardar">Guardar</string>
+    <string name="gestion_cancelar">Cancelar</string>
+
+    <!-- Tarjetas -->
+    <string name="gestion_qr">Código QR: %1$s</string>
+    <string name="gestion_video">Video: %1$s</string>
+    <string name="gestion_ubicacion">Ubicación: %1$.4f, %2$.4f</string>
+
+    <!-- Formulario de punto -->
+    <string name="gestion_label_lugar">Nombre del lugar</string>
+    <string name="gestion_label_concepto">Concepto de IA (tema)</string>
+    <string name="gestion_label_url">URL del video</string>
+    <string name="gestion_label_latitud">Latitud (ej. -33.4429)</string>
+    <string name="gestion_label_longitud">Longitud (ej. -70.6539)</string>
+    <string name="gestion_label_qr">Código QR (vacío = generar automático)</string>
+    <string name="gestion_label_recompensa">Puntos de recompensa</string>
+
+    <!-- Errores -->
+    <string name="gestion_error_campos">Completa el nombre y el concepto de IA</string>
+    <string name="gestion_error_url">La URL debe comenzar con http</string>
+    <string name="gestion_error_coordenadas">Latitud o longitud inválidas</string>
+    <string name="gestion_error_puntos">Ingresa un puntaje válido</string>
+    <string name="gestion_error_qr_duplicado">Ese código QR ya lo usa otro punto</string>
+
+    <!-- Confirmaciones -->
+    <string name="gestion_eliminar_punto_titulo">¿Eliminar punto?</string>
+    <string name="gestion_eliminar_punto_texto">Se eliminará %1$s junto con su cápsula y su código QR.</string>
+    <string name="gestion_eliminar_jugador_titulo">¿Eliminar jugador?</string>
+    <string name="gestion_eliminar_jugador_texto">Se eliminará a %1$s. Esta acción no se puede deshacer.</string>
+</resources>

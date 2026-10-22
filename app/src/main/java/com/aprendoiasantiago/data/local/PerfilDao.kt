@@ -37,6 +37,9 @@ interface PerfilDao {
     @Update
     suspend fun actualizar(perfil: PerfilEntity)
 
+    @Query("DELETE FROM perfil WHERE id = :id")
+    suspend fun eliminar(id: Int)
+
     // --- Sesión: una sola fila con el jugador activo ---
 
     @Query("SELECT jugadorId FROM sesion WHERE id = 1")
