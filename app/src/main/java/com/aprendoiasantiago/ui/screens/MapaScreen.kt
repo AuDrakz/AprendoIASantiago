@@ -1,4 +1,3 @@
-
 package com.aprendoiasantiago.ui.screens
 
 import android.Manifest
@@ -25,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -81,6 +81,8 @@ fun MapaScreen(
         mutableStateOf<PuntoInteres?>(null)
     }
 
+    var mapaControles by remember { mutableStateOf<MapView?>(null) }
+
     val permisosLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { resultado ->
@@ -119,52 +121,84 @@ fun MapaScreen(
             )
         }
 
-        AndroidView(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
-            factory = { ctx ->
-                crearMapa(ctx)
-            },
-            update = { mapa ->
-                actualizarMarcadores(
-                    mapa = mapa,
-                    puntos = uiState.puntos,
-                    alSeleccionar = { punto ->
-                        puntoSeleccionado = punto
-                    }
-                )
+                .weight(1f)
+        ) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    crearMapa(ctx).also { mapaControles = it }
+                },
+                update = { mapa ->
+                    actualizarMarcadores(
+                        mapa = mapa,
+                        puntos = uiState.puntos,
+                        alSeleccionar = { punto ->
+                            puntoSeleccionado = punto
+                        }
+                    )
 
-                actualizarOverlayUbicacion(
-                    mapa = mapa,
-                    habilitado = permisoUbicacion,
-                    alRecibirUbicacion = { ubicacion ->
-                        ubicacionUsuario = ubicacion
-                    }
-                )
+                    actualizarOverlayUbicacion(
+                        mapa = mapa,
+                        habilitado = permisoUbicacion,
+                        alRecibirUbicacion = { ubicacion ->
+                            ubicacionUsuario = ubicacion
+                        }
+                    )
 
-                mapa.invalidate()
+                    mapa.invalidate()
+                }
+            )
+
+            // Controles propios con fondo sólido: siempre se distinguen de las teselas.
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { mapaControles?.controller?.zoomIn() },
+                    modifier = Modifier.size(56.dp),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ComposeColor(0xFF252525),
+                        contentColor = ComposeColor.White
+                    )
+                ) { Text("+", style = MaterialTheme.typography.headlineMedium) }
+                Button(
+                    onClick = { mapaControles?.controller?.zoomOut() },
+                    modifier = Modifier.size(56.dp),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ComposeColor(0xFF252525),
+                        contentColor = ComposeColor.White
+                    )
+                ) { Text("−", style = MaterialTheme.typography.headlineMedium) }
             }
-        )
+        }
 
         OutlinedButton(
             onClick = {
-                val mapa = ubicacionUsuario
-                if (mapa != null) {
-                    // El centrado también se realiza desde el overlay GPS.
-                    // Este botón informa que ya hay una ubicación disponible.
+                val ubicacion = ubicacionUsuario
+                val mapa = mapaControles
+                if (ubicacion != null && mapa != null) {
+                    mapa.controller.animateTo(ubicacion)
+                    mapa.controller.setZoom(17.0)
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp),
-            enabled = permisoUbicacion
+            enabled = permisoUbicacion && ubicacionUsuario != null
         ) {
             Text(
                 if (ubicacionUsuario == null) {
                     "Buscando ubicación GPS..."
                 } else {
-                    "Ubicación detectada"
+                    "Centrar mapa en mi ubicación"
                 }
             )
         }
@@ -290,6 +324,8 @@ private fun crearMapa(context: Context): MapView {
     return MapView(context).apply {
         setTileSource(TileSourceFactory.MAPNIK)
         setMultiTouchControls(true)
+        // Mantiene visibles los controles nativos de zoom del mapa.
+        zoomController.setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER)
         controller.setZoom(14.5)
         controller.setCenter(GeoPoint(-33.4429, -70.6539))
     }

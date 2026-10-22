@@ -1,4 +1,3 @@
-
 package com.aprendoiasantiago.ui.screens
 
 import android.Manifest
@@ -21,7 +20,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -32,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.aprendoiasantiago.model.ResultadoEscaneo
 import com.aprendoiasantiago.viewmodel.EscanerViewModel
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
@@ -85,31 +85,40 @@ fun QrScannerScreen(
         mutableStateOf<String?>(null)
     }
 
-    val permisosLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permisos ->
-        permisoCamara =
-            permisos[Manifest.permission.CAMERA] == true ||
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.CAMERA
-                    ) == PackageManager.PERMISSION_GRANTED
-
-        permisoUbicacion =
-            permisos[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                    permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
-                    tienePermisoUbicacionQr(context)
-
-        mensaje = when {
-            !permisoCamara ->
-                "Debes permitir el uso de la cámara para escanear QR."
-
-            !permisoUbicacion ->
-                "Debes permitir la ubicación para validar la visita."
-
-            else -> "Apunta la cámara al código QR."
-        }
+    var resultadoValidacion by remember {
+        mutableStateOf<ResultadoEscaneo?>(null)
     }
+
+    var reiniciarEscaner by remember {
+        mutableStateOf(0)
+    }
+
+    val permisosLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        onResult = { permisos: Map<String, Boolean> ->
+            permisoCamara =
+                permisos[Manifest.permission.CAMERA] == true ||
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.CAMERA
+                        ) == PackageManager.PERMISSION_GRANTED
+
+            permisoUbicacion =
+                permisos[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                        permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
+                        tienePermisoUbicacionQr(context)
+
+            mensaje = when {
+                !permisoCamara ->
+                    "Debes permitir el uso de la cámara para escanear QR."
+
+                !permisoUbicacion ->
+                    "Debes permitir la ubicación para validar la visita."
+
+                else -> "Apunta la cámara al código QR."
+            }
+        }
+    )
 
     LaunchedEffect(Unit) {
         val permisosNecesarios = mutableListOf<String>()
@@ -119,8 +128,12 @@ fun QrScannerScreen(
         }
 
         if (!permisoUbicacion) {
-            permisosNecesarios.add(Manifest.permission.ACCESS_FINE_LOCATION)
-            permisosNecesarios.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+            permisosNecesarios.add(
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+            permisosNecesarios.add(
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
         }
 
         if (permisosNecesarios.isNotEmpty()) {
@@ -148,15 +161,17 @@ fun QrScannerScreen(
         )
 
         if (permisoCamara && permisoUbicacion) {
-            QrCameraPreview(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                onQrDetectado = { codigo ->
-                    mensaje = "Código QR detectado."
-                    resultadoDialogo = codigo
-                }
-            )
+            key(reiniciarEscaner) {
+                QrCameraPreview(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    onQrDetectado = { codigo ->
+                        mensaje = "Código QR detectado."
+                        resultadoDialogo = codigo
+                    }
+                )
+            }
         } else {
             Box(
                 modifier = Modifier
@@ -164,9 +179,7 @@ fun QrScannerScreen(
                     .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Se necesitan permisos de cámara y ubicación."
-                )
+                Text("Se necesitan permisos de cámara y ubicación.")
             }
 
             Button(
@@ -198,18 +211,55 @@ fun QrScannerScreen(
             text = {
                 Text(
                     "Contenido leído:\n$codigo\n\n" +
-                            "La visita debe validarse con el repositorio " +
-                            "antes de otorgar puntos."
+                            "Pulsa Aceptar para comprobar el código, " +
+                            "la ubicación GPS y el estado de la visita."
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         resultadoDialogo = null
-                        mensaje = "Apunta la cámara al siguiente código QR."
+
+                        val ubicacion = obtenerUltimaUbicacionQr(context)
+
+                        viewModel.escanearCodigoQR(
+                            codigoLeido = codigo.trim(),
+                            latitudUsuario = ubicacion?.latitud,
+                            longitudUsuario = ubicacion?.longitud,
+                            onResultado = { resultado: ResultadoEscaneo ->
+                                resultadoValidacion = resultado
+
+                                mensaje = when (resultado) {
+                                    is ResultadoEscaneo.Exito ->
+                                        "Visita validada: ${resultado.punto.titulo}. " +
+                                                "+${resultado.punto.puntosRecompensa} puntos."
+
+                                    is ResultadoEscaneo.YaVisitado ->
+                                        "Este punto ya estaba visitado. " +
+                                                "No se sumaron puntos nuevamente."
+
+                                    is ResultadoEscaneo.FueraDeRango ->
+                                        "QR correcto, pero estás a " +
+                                                "${resultado.distanciaMetros.toInt()} m. " +
+                                                "Acércate al punto para validar."
+
+                                    ResultadoEscaneo.Invalido ->
+                                        "QR no reconocido: no existe en los puntos " +
+                                                "de la aplicación."
+
+                                    ResultadoEscaneo.SinUbicacion ->
+                                        "No se pudo validar: activa el GPS y espera " +
+                                                "a obtener ubicación."
+
+                                    else ->
+                                        "No se pudo completar la validación."
+                                }
+                            },
+                            altitudUsuario = ubicacion?.altitud
+                        )
                     }
                 ) {
-                    Text("Aceptar")
+                    Text("Validar visita")
                 }
             },
             dismissButton = {
@@ -220,6 +270,65 @@ fun QrScannerScreen(
                     }
                 ) {
                     Text("Cerrar")
+                }
+            }
+        )
+    }
+
+    resultadoValidacion?.let { resultado ->
+        val textoResultado = when (resultado) {
+            is ResultadoEscaneo.Exito ->
+                "VISITA VALIDADA\n" +
+                        "Lugar: ${resultado.punto.titulo}\n" +
+                        "Puntos obtenidos: ${resultado.punto.puntosRecompensa}\n" +
+                        "Fecha: ${resultado.punto.fechaVisita ?: "guardada"}\n" +
+                        "Altitud: ${resultado.punto.altitudVisita?.let { "$it m" } ?: "no disponible"}"
+
+            is ResultadoEscaneo.YaVisitado ->
+                "Este lugar ya estaba registrado como visitado. " +
+                        "No se duplicaron los puntos."
+
+            is ResultadoEscaneo.FueraDeRango ->
+                "El código pertenece a ${resultado.punto.titulo}, " +
+                        "pero estás a ${resultado.distanciaMetros.toInt()} metros. " +
+                        "Debes acercarte para recibir los puntos."
+
+            ResultadoEscaneo.Invalido ->
+                "El código QR no existe en la base de datos de la aplicación."
+
+            ResultadoEscaneo.SinUbicacion ->
+                "No hay ubicación GPS disponible. " +
+                        "Activa la ubicación y vuelve a intentarlo."
+
+            else ->
+                "No se pudo completar la validación de la visita."
+        }
+
+        AlertDialog(
+            onDismissRequest = {
+                resultadoValidacion = null
+            },
+            title = {
+                Text(
+                    if (resultado is ResultadoEscaneo.Exito) {
+                        "Visita validada"
+                    } else {
+                        "Resultado de validación"
+                    }
+                )
+            },
+            text = {
+                Text(textoResultado)
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        resultadoValidacion = null
+                        reiniciarEscaner++
+                        mensaje = "Apunta la cámara al siguiente código QR."
+                    }
+                ) {
+                    Text("Entendido")
                 }
             }
         )
