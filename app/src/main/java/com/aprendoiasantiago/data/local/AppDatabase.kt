@@ -1,4 +1,3 @@
-
 package com.aprendoiasantiago.data.local
 
 import android.content.Context
@@ -10,9 +9,10 @@ import androidx.room.RoomDatabase
     entities = [
         PuntoEntity::class,
         PerfilEntity::class,
-        RankingEntity::class
+        RankingEntity::class,
+        SesionEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

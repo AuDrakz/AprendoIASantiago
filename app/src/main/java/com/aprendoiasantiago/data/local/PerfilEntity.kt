@@ -5,14 +5,18 @@ import androidx.room.PrimaryKey
 import com.aprendoiasantiago.model.Rol
 
 /**
- * Tabla "perfil". Guarda los datos fijos del usuario, su rol y la ruta de su foto.
- * Los puntos y lugares se calculan desde la tabla "puntos".
+ * Tabla "perfil": un registro por jugador. La contraseña se guarda como "sal:hash".
  */
 @Entity(tableName = "perfil")
 data class PerfilEntity(
-    @PrimaryKey val id: Int,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val nombreUsuario: String,
+    val alias: String? = null,
     val email: String,
+    val telefono: String = "",
+    val direccion: String = "",
+    val avatar: Int = 0,
+    val contrasenaHash: String,
     val rol: Rol = Rol.CLIENTE,
     val fotoRuta: String? = null
 )
