@@ -1,4 +1,3 @@
-
 package com.aprendoiasantiago.repository
 
 import com.aprendoiasantiago.data.local.PerfilDao
@@ -61,8 +60,22 @@ class PuntoRepository(
 
     suspend fun sembrarDatosIniciales() {
         if (puntoDao.contar() == 0) {
-            puntoDao.insertarTodos(
-                puntosIniciales.map { it.toEntity() }
+            puntoDao.insertarTodos(puntosIniciales.map { it.toEntity() })
+        } else {
+            // Si la app ya tenía una base de datos, añade solo los puntos que falten.
+            // IGNORE evita reemplazar los puntos visitados o perder sus recompensas.
+            puntosIniciales.forEach { punto ->
+                puntoDao.insertarSiNoExiste(punto.toEntity())
+            }
+        }
+
+        // Asegura que los QR impresos coincidan con los códigos consultados por el escáner.
+        // Solo cambia codigoQR en los puntos iniciales; conserva visita, fecha y altitud.
+        puntosIniciales.forEach { punto ->
+            puntoDao.actualizarCodigoQr(
+                id = punto.id,
+                titulo = punto.titulo,
+                codigoQR = punto.codigoQR
             )
         }
 

@@ -1,4 +1,3 @@
-
 package com.aprendoiasantiago.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -19,6 +18,9 @@ class EscanerViewModel(
         altitudUsuario: Double? = null
     ) {
         viewModelScope.launch {
+            // Garantiza que los puntos y sus códigos QR estén sincronizados antes de buscar.
+            repositorio.sembrarDatosIniciales()
+
             val resultado = repositorio.registrarVisita(
                 codigoQR = codigoLeido,
                 latitudUsuario = latitudUsuario,

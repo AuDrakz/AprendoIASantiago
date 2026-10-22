@@ -1,4 +1,3 @@
-
 package com.aprendoiasantiago.data.local
 
 import androidx.room.Dao
@@ -41,6 +40,14 @@ interface PuntoDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarTodos(puntos: List<PuntoEntity>)
+
+    // Inserta puntos que falten sin sobrescribir visitas ya registradas.
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertarSiNoExiste(punto: PuntoEntity): Long
+
+    // Sincroniza únicamente el QR del punto esperado; no borra fecha, altitud ni visita.
+    @Query("UPDATE puntos SET codigoQR = :codigoQR WHERE id = :id AND titulo = :titulo")
+    suspend fun actualizarCodigoQr(id: Int, titulo: String, codigoQR: String): Int
 
     @Update
     suspend fun actualizar(punto: PuntoEntity)
