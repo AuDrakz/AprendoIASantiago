@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -103,24 +105,6 @@ fun MapaScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            LeyendaPunto(
-                color = ComposeColor(VerdeVisitado),
-                texto = "Punto visitado"
-            )
-
-            LeyendaPunto(
-                color = ComposeColor(RojoPendiente),
-                texto = "Punto pendiente"
-            )
-        }
-
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -152,6 +136,19 @@ fun MapaScreen(
                 }
             )
 
+            // Leyenda en esquina, con fondo oscuro para que se lea sobre el mapa
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(12.dp)
+                    .background(ComposeColor(0xE6212121), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                LeyendaPunto(ComposeColor(VerdeVisitado), "Punto visitado")
+                LeyendaPunto(ComposeColor(RojoPendiente), "Punto pendiente")
+            }
+
             // Controles propios con fondo sólido: siempre se distinguen de las teselas.
             Column(
                 modifier = Modifier
@@ -163,6 +160,7 @@ fun MapaScreen(
                     onClick = { mapaControles?.controller?.zoomIn() },
                     modifier = Modifier.size(56.dp),
                     shape = CircleShape,
+                    contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = ComposeColor(0xFF252525),
                         contentColor = ComposeColor.White
@@ -172,6 +170,7 @@ fun MapaScreen(
                     onClick = { mapaControles?.controller?.zoomOut() },
                     modifier = Modifier.size(56.dp),
                     shape = CircleShape,
+                    contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = ComposeColor(0xFF252525),
                         contentColor = ComposeColor.White
@@ -180,7 +179,7 @@ fun MapaScreen(
             }
         }
 
-        OutlinedButton(
+        Button(
             onClick = {
                 val ubicacion = ubicacionUsuario
                 val mapa = mapaControles
@@ -192,7 +191,13 @@ fun MapaScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 6.dp),
-            enabled = permisoUbicacion && ubicacionUsuario != null
+            enabled = permisoUbicacion && ubicacionUsuario != null,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ComposeColor(0xFF1565C0),
+                contentColor = ComposeColor.White,
+                disabledContainerColor = ComposeColor(0xFF9E9E9E),
+                disabledContentColor = ComposeColor.White
+            )
         ) {
             Text(
                 if (ubicacionUsuario == null) {
@@ -286,7 +291,7 @@ private fun LeyendaPunto(
                 .size(13.dp)
                 .background(color, CircleShape)
         )
-        Text(texto, style = MaterialTheme.typography.bodySmall)
+        Text(texto, style = MaterialTheme.typography.bodySmall, color = ComposeColor.White)
     }
 }
 

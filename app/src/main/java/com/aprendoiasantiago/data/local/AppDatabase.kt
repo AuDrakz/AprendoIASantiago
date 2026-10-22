@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import android.content.ContentValues
+import android.os.Build
+import android.provider.MediaStore
 
 @Database(
     entities = [
@@ -12,7 +15,7 @@ import androidx.room.RoomDatabase
         RankingEntity::class,
         SesionEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

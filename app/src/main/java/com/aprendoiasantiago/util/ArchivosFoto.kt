@@ -8,6 +8,9 @@ import android.media.ExifInterface
 import android.net.Uri
 import androidx.core.content.FileProvider
 import java.io.File
+import android.content.ContentValues
+import android.os.Build
+import android.provider.MediaStore
 
 /** Guarda fotos en filesDir/fotos (coincide con file_paths.xml). */
 object ArchivosFoto {
@@ -77,5 +80,23 @@ object ArchivosFoto {
     private fun descartar(ruta: String): String? {
         borrar(ruta)
         return null
+    }
+    /** Copia la foto a la galería del teléfono (Pictures/AprendoIA). */
+    fun guardarEnGaleria(c: Context, ruta: String) {
+        runCatching {
+            val valores = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, "selfie_${System.currentTimeMillis()}.jpg")
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/AprendoIA")
+                }
+            }
+            val uri = c.contentResolver.insert(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, valores
+            ) ?: return@runCatching
+            c.contentResolver.openOutputStream(uri)?.use { salida ->
+                File(ruta).inputStream().use { it.copyTo(salida) }
+            }
+        }
     }
 }

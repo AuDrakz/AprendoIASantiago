@@ -274,7 +274,7 @@ private fun FormularioPuntoDialog(
     var latitud by remember { mutableStateOf(punto?.latitud?.toString() ?: "") }
     var longitud by remember { mutableStateOf(punto?.longitud?.toString() ?: "") }
     var codigoQr by remember { mutableStateOf(punto?.codigoQR ?: "") }
-    var recompensa by remember { mutableStateOf(punto?.puntosRecompensa?.toString() ?: "100") }
+    var recompensa by remember { mutableStateOf(punto?.puntosRecompensa?.toString() ?: "10") }
     var error by remember { mutableStateOf<Int?>(null) }
 
     val tituloDialogo = when {

@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.androidx.camera.mlkit.vision)
     implementation(libs.mlkit.barcode.scanning)
+    implementation("com.google.mlkit:face-detection:16.1.7")
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
@@ -68,7 +69,6 @@ dependencies {
     implementation(libs.androidx.compose.material3.window.size)
     implementation(libs.osmdroid.android)
     implementation(libs.coil.compose)
-
 
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("androidx.media3:media3-exoplayer:1.11.1")

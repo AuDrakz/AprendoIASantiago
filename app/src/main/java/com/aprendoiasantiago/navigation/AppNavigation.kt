@@ -40,6 +40,7 @@ import androidx.navigation.navArgument
 import com.aprendoiasantiago.R
 import com.aprendoiasantiago.data.local.UserPreferencesRepository
 import com.aprendoiasantiago.model.Rol
+import com.aprendoiasantiago.ui.components.IconoQr
 import com.aprendoiasantiago.ui.screens.BienvenidaScreen
 import com.aprendoiasantiago.ui.screens.DetalleVideoScreen
 import com.aprendoiasantiago.ui.screens.EditarPerfilScreen
@@ -78,7 +79,7 @@ private val itemsCliente = listOf(
     ItemBarra(
         Screen.ScannerQR,
         R.string.nav_escaner,
-        Icons.Filled.Place
+        IconoQr
     ),
     ItemBarra(
         Screen.Perfil,

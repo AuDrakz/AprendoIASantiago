@@ -56,7 +56,8 @@ class PuntoRepository(
                 val visitados = listaPuntos.filter { it.fueVisitado }
 
                 perfilGuardado.toModel(
-                    puntosTotales = visitados.sumOf { it.puntosRecompensa },
+                    puntosTotales = visitados.sumOf { it.puntosRecompensa } +
+                            visitados.count { it.selfieRuta != null } * PUNTOS_SELFIE,
                     lugaresDescubiertos = visitados.size
                 )
             }
@@ -331,6 +332,27 @@ class PuntoRepository(
             )
         }
     }
+    /** Visita + selfie. Devuelve el resultado y si se otorgó el bonus de selfie. */
+    suspend fun registrarSelfie(
+        codigoQR: String,
+        latitudUsuario: Double?,
+        longitudUsuario: Double?,
+        altitudUsuario: Double?,
+        ruta: String
+    ): Pair<ResultadoEscaneo, Boolean> {
+        val resultado = registrarVisita(codigoQR, latitudUsuario, longitudUsuario, altitudUsuario)
+
+        val punto = when (resultado) {
+            is ResultadoEscaneo.Exito -> resultado.punto
+            is ResultadoEscaneo.YaVisitado -> resultado.punto
+            else -> return resultado to false
+        }
+
+        if (puntoDao.selfieActual(punto.id) != null) return resultado to false
+
+        puntoDao.guardarSelfie(punto.id, ruta)
+        return resultado to true
+    }
 
     private fun distanciaEnMetros(
         latitud1: Double,
@@ -368,6 +390,7 @@ class PuntoRepository(
     private companion object {
 
         const val RADIO_MAXIMO_METROS = 50.0
+        const val PUNTOS_SELFIE = 100
 
         val puntosIniciales = listOf(
             PuntoInteres(
@@ -377,7 +400,7 @@ class PuntoRepository(
                 latitud = -33.4429,
                 longitud = -70.6539,
                 codigoQR = "QR_LAMONEDA_01",
-                puntosRecompensa = 100,
+                puntosRecompensa = 10,
                 urlVideo = "https://aprendoia.cl/videos/vision_computador.mp4"
             ),
             PuntoInteres(
@@ -387,7 +410,7 @@ class PuntoRepository(
                 latitud = -33.4378,
                 longitud = -70.6504,
                 codigoQR = "QR_PLAZA_02",
-                puntosRecompensa = 150,
+                puntosRecompensa = 10,
                 urlVideo = "https://aprendoia.cl/videos/nlp.mp4"
             ),
             PuntoInteres(
@@ -397,7 +420,7 @@ class PuntoRepository(
                 latitud = -33.4350,
                 longitud = -70.6420,
                 codigoQR = "QR_FORESTAL_03",
-                puntosRecompensa = 200,
+                puntosRecompensa = 10,
                 urlVideo = "https://aprendoia.cl/videos/redes_neuronales.mp4"
             )
         )

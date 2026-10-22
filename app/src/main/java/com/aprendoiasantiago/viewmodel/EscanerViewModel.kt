@@ -31,4 +31,20 @@ class EscanerViewModel(
             onResultado(resultado)
         }
     }
+    fun registrarSelfie(
+        codigoLeido: String,
+        latitudUsuario: Double?,
+        longitudUsuario: Double?,
+        altitudUsuario: Double?,
+        ruta: String,
+        onResultado: (ResultadoEscaneo, Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+            repositorio.sembrarDatosIniciales()
+            val (resultado, bonus) = repositorio.registrarSelfie(
+                codigoLeido, latitudUsuario, longitudUsuario, altitudUsuario, ruta
+            )
+            onResultado(resultado, bonus)
+        }
+    }
 }
