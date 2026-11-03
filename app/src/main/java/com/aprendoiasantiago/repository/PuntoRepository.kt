@@ -5,6 +5,7 @@ import com.aprendoiasantiago.data.local.PerfilEntity
 import com.aprendoiasantiago.data.local.PuntoDao
 import com.aprendoiasantiago.data.local.RankingDao
 import com.aprendoiasantiago.data.local.RankingEntity
+import com.aprendoiasantiago.data.local.SesionDao
 import com.aprendoiasantiago.data.local.SesionEntity
 import com.aprendoiasantiago.data.local.toEntity
 import com.aprendoiasantiago.data.local.toModel
@@ -27,10 +28,12 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+
 class PuntoRepository(
     private val puntoDao: PuntoDao,
     private val perfilDao: PerfilDao,
-    private val rankingDao: RankingDao
+    private val rankingDao: RankingDao,
+    private val sesionDao: SesionDao
 ) {
 
     val puntos: Flow<List<PuntoInteres>> =
@@ -45,7 +48,7 @@ class PuntoRepository(
 
     /** Perfil del jugador con la sesión abierta (id = 0 si no hay sesión). */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val perfil: Flow<PerfilUsuario> = perfilDao.observarSesion().flatMapLatest { jugadorId ->
+    val perfil: Flow<PerfilUsuario> = sesionDao.observarSesion().flatMapLatest { jugadorId ->
         if (jugadorId == null) {
             flowOf(PerfilUsuario(id = 0, nombreUsuario = "", email = ""))
         } else {
@@ -66,7 +69,7 @@ class PuntoRepository(
 
     /** Jugador con la sesión abierta, o null si no hay sesión. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val jugadorActivo: Flow<PerfilUsuario?> = perfilDao.observarSesion().flatMapLatest { jugadorId ->
+    val jugadorActivo: Flow<PerfilUsuario?> = sesionDao.observarSesion().flatMapLatest { jugadorId ->
         if (jugadorId == null) {
             flowOf(null)
         } else {
@@ -157,7 +160,7 @@ class PuntoRepository(
                 contrasenaHash = Seguridad.hashear(contrasena)
             )
         )
-        perfilDao.guardarSesion(SesionEntity(jugadorId = id.toInt()))
+        sesionDao.guardarSesion(SesionEntity(jugadorId = id.toInt()))
         return true
     }
 
@@ -166,11 +169,11 @@ class PuntoRepository(
         val jugador = perfilDao.buscarPorId(jugadorId) ?: return false
         if (!Seguridad.verificar(contrasena, jugador.contrasenaHash)) return false
 
-        perfilDao.guardarSesion(SesionEntity(jugadorId = jugadorId))
+        sesionDao.guardarSesion(SesionEntity(jugadorId = jugadorId))
         return true
     }
 
-    suspend fun cerrarSesion() = perfilDao.cerrarSesion()
+    suspend fun cerrarSesion() = sesionDao.cerrarSesion()
 
     // --- Gestión (Administrador y Creador de Contenido) ---
 
@@ -233,7 +236,7 @@ class PuntoRepository(
         email: String,
         fotoRuta: String?
     ): Boolean {
-        val jugadorId = perfilDao.sesionActual() ?: return false
+        val jugadorId = sesionDao.sesionActual() ?: return false
         val actual = perfilDao.buscarPorId(jugadorId) ?: return false
 
         if (perfilDao.contarPorEmail(email.trim(), jugadorId) > 0) return false
