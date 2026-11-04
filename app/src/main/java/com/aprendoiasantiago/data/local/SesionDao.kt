@@ -15,9 +15,6 @@ interface SesionDao {
     @Query("SELECT jugadorId FROM sesion WHERE id = 1")
     suspend fun sesionActual(): Int?
 
-    @Query("SELECT * FROM sesion WHERE id = 1 LIMIT 1")
-    suspend fun obtenerSesionActiva(): SesionEntity?
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun guardarSesion(sesion: SesionEntity)
 

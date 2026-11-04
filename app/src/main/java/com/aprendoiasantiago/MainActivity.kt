@@ -33,7 +33,8 @@ class MainActivity : ComponentActivity() {
         PuntoRepository(
             baseDeDatos.puntoDao(),
             baseDeDatos.perfilDao(),
-            baseDeDatos.rankingDao()
+            baseDeDatos.rankingDao(),
+            baseDeDatos.sesionDao()
         )
     }
 

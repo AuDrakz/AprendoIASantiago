@@ -26,6 +26,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun rankingDao(): RankingDao
 
+    abstract fun sesionDao(): SesionDao
+
     companion object {
 
         @Volatile
