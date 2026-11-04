@@ -14,7 +14,7 @@
 
     <!-- Filtros -->
     <string name="filtro_todos">Todos</string>
-    <string name="filtro_pendientes">Pendientes</string>
+    <string name="filtro_pendientes">No Descubiertos</string>
     <string name="filtro_visitados">Visitados</string>
 
     <!-- Lista y tarjeta -->
@@ -22,7 +22,7 @@
     <string name="lista_vacia">No hay puntos en esta categoría</string>
     <string name="tarjeta_escanear">Escanear QR</string>
     <string name="tarjeta_visitado">Visitado</string>
-    <string name="tarjeta_pendiente">Pendiente</string>
+    <string name="tarjeta_pendiente">No Descubierto</string>
     <string name="tarjeta_concepto_ia">Concepto IA: %1$s</string>
 
     <!-- Mapa -->
@@ -56,6 +56,10 @@
     <string name="perfil_metrica_lugares">Lugares</string>
     <string name="editar_perfil">Editar perfil</string>
     <string name="ajustes_alto_contraste">Modo Alto Contraste (Luz Solar)</string>
+    <string name="ajustes_modo_oscuro">Tema oscuro</string>
+    <string name="ajustes_daltonismo">Modo daltonismo</string>
+    <string name="mapa_leyenda_visitado">Descubierto</string>
+    <string name="mapa_leyenda_no_descubierto">No descubierto</string>
     <string name="ranking_pts">%1$d pts</string>
 
     <!-- Editar perfil -->
@@ -134,4 +138,28 @@
     <!-- Sesión -->
     <string name="cerrar_sesion">Cerrar sesión</string>
     <string name="avatar_descripcion">Avatar</string>
+    <string name="lista_progreso">%1$d de %2$d descubiertos</string>
+    <string name="tarjeta_ver_capsula">Ver cápsula</string>
+    <string name="gestion_label_direccion">Buscar lugar o dirección</string>
+    <string name="gestion_direccion_ayuda">Escribe el lugar o la calle y elige una sugerencia</string>
+    <string name="gestion_direccion_elegida">Ubicación seleccionada</string>
+    <string name="gestion_direccion_actual">Ubicación guardada. Busca otra dirección solo si quieres cambiarla.</string>
+    <string name="gestion_sin_resultados">Sin resultados. Revisa tu conexión o prueba con otro nombre.</string>
+    <string name="gestion_error_direccion">Elige una dirección de la lista de sugerencias</string>
+    <string name="gestion_lugar_fijo">Lugar: %1$s</string>
+    <string name="acceso_titulo_registro">Crear cuenta</string>
+    <string name="acceso_titulo_login">Iniciar sesión</string>
+    <string name="acceso_usuario_label">Usuario o correo</string>
+    <string name="acceso_boton_registrarse">Registrarse</string>
+    <string name="acceso_boton_ingresar">Ingresar</string>
+    <string name="acceso_ir_a_login">¿Ya tienes cuenta? Iniciar sesión</string>
+    <string name="acceso_ir_a_registro">¿Eres nuevo? Crear cuenta</string>
+    <string name="acceso_elige_avatar">Elige tu avatar</string>
+    <string name="acceso_crear_cuenta">Crear cuenta</string>
+    <string name="acceso_omitir_avatar">Omitir y usar avatar por defecto</string>
+    <string name="acceso_volver_datos">Volver a mis datos</string>
+    <string name="acceso_error_credenciales">Usuario o contraseña incorrectos</string>
+    <string name="acceso_error_campos">Completa ambos campos</string>
+    <string name="error_nombre_duplicado">Ese nombre de usuario ya está en uso</string>
+    <string name="gestion_creador_aviso">Solo puedes editar el tema y la URL del video.</string>
 </resources>

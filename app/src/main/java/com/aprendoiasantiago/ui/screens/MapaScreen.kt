@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.location.Location
-import android.os.Bundle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -15,24 +14,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,12 +36,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
+import com.aprendoiasantiago.R
 import com.aprendoiasantiago.model.PuntoInteres
+import com.aprendoiasantiago.ui.theme.LocalColoresEstado
 import com.aprendoiasantiago.viewmodel.PuntosViewModel
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -60,15 +58,19 @@ import java.io.File
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val VerdeVisitado = Color.rgb(46, 160, 67)
-private val RojoPendiente = Color.rgb(220, 53, 69)
 
 @Composable
 fun MapaScreen(
     viewModel: PuntosViewModel,
-    onVerDetalle: (Int) -> Unit
+    onVerDetalle: (Int) -> Unit,
+    // El administrador solo ve dónde están los puntos: un único color y sin leyenda
+    esAdmin: Boolean = false
 ) {
     val context = LocalContext.current
+    val estados = LocalColoresEstado.current
+    val colorVisitado = estados.visitado.toArgb()
+    val colorNoDescubierto = estados.noDescubierto.toArgb()
+    val colorAdmin = estados.admin.toArgb()
     val uiState by viewModel.uiState.collectAsState()
 
     var permisoUbicacion by remember {
@@ -119,6 +121,10 @@ fun MapaScreen(
                     actualizarMarcadores(
                         mapa = mapa,
                         puntos = uiState.puntos,
+                        esAdmin = esAdmin,
+                        colorVisitado = colorVisitado,
+                        colorNoDescubierto = colorNoDescubierto,
+                        colorAdmin = colorAdmin,
                         alSeleccionar = { punto ->
                             puntoSeleccionado = punto
                         }
@@ -136,17 +142,19 @@ fun MapaScreen(
                 }
             )
 
-            // Leyenda en esquina, con fondo oscuro para que se lea sobre el mapa
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(12.dp)
-                    .background(ComposeColor(0xE6212121), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                LeyendaPunto(ComposeColor(VerdeVisitado), "Punto visitado")
-                LeyendaPunto(ComposeColor(RojoPendiente), "Punto pendiente")
+            // Leyenda en esquina (solo cliente y creador; el admin no la necesita)
+            if (!esAdmin) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp)
+                        .background(ComposeColor(0xE6212121), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    LeyendaPunto(estados.visitado, stringResource(R.string.mapa_leyenda_visitado))
+                    LeyendaPunto(estados.noDescubierto, stringResource(R.string.mapa_leyenda_no_descubierto))
+                }
             }
 
             // Controles propios con fondo sólido: siempre se distinguen de las teselas.
@@ -227,15 +235,17 @@ fun MapaScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(punto.conceptoIA)
 
-                    Text(
-                        if (punto.fueVisitado) {
-                            "Estado: visitado"
-                        } else {
-                            "Estado: pendiente"
-                        }
-                    )
+                    if (!esAdmin) {
+                        Text(
+                            if (punto.fueVisitado) {
+                                "Estado: descubierto"
+                            } else {
+                                "Estado: no descubierto"
+                            }
+                        )
 
-                    Text("Recompensa: ${punto.puntosRecompensa} puntos")
+                        Text("Recompensa: ${punto.puntosRecompensa} puntos")
+                    }
 
                     Text(
                         distanciaMetros?.let { distancia ->
@@ -339,6 +349,10 @@ private fun crearMapa(context: Context): MapView {
 private fun actualizarMarcadores(
     mapa: MapView,
     puntos: List<PuntoInteres>,
+    esAdmin: Boolean,
+    colorVisitado: Int,
+    colorNoDescubierto: Int,
+    colorAdmin: Int,
     alSeleccionar: (PuntoInteres) -> Unit
 ) {
     mapa.overlays.removeAll { it is Marker }
@@ -347,14 +361,18 @@ private fun actualizarMarcadores(
         val marcador = Marker(mapa).apply {
             position = GeoPoint(punto.latitud, punto.longitud)
             title = punto.titulo
-            snippet = if (punto.fueVisitado) {
-                "Punto visitado"
-            } else {
-                "Punto pendiente"
+            snippet = when {
+                esAdmin -> null
+                punto.fueVisitado -> "Descubierto"
+                else -> "No descubierto"
             }
 
             icon = crearIconoMarcador(
-                if (punto.fueVisitado) VerdeVisitado else RojoPendiente
+                when {
+                    esAdmin -> colorAdmin
+                    punto.fueVisitado -> colorVisitado
+                    else -> colorNoDescubierto
+                }
             )
 
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)

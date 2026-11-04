@@ -14,8 +14,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
@@ -40,7 +39,9 @@ import androidx.navigation.navArgument
 import com.aprendoiasantiago.R
 import com.aprendoiasantiago.data.local.UserPreferencesRepository
 import com.aprendoiasantiago.model.Rol
+import com.aprendoiasantiago.ui.components.BarraInferiorFlotante
 import com.aprendoiasantiago.ui.components.IconoQr
+import com.aprendoiasantiago.ui.components.ItemBarraFlotante
 import com.aprendoiasantiago.ui.screens.BienvenidaScreen
 import com.aprendoiasantiago.ui.screens.DetalleVideoScreen
 import com.aprendoiasantiago.ui.screens.EditarPerfilScreen
@@ -186,7 +187,7 @@ fun AppNavigation(
     }
 }
 
-/** Bienvenida → Selección de jugador → Registro. Sin barra de navegación. */
+/** Bienvenida → Acceso (registro o inicio de sesión). Sin barra de navegación. */
 @Composable
 private fun NavegacionAcceso(sesionViewModel: SesionViewModel) {
     val navController = rememberNavController()
@@ -198,23 +199,12 @@ private fun NavegacionAcceso(sesionViewModel: SesionViewModel) {
         composable(Screen.Bienvenida.route) {
             BienvenidaScreen(
                 onComenzar = {
-                    navController.navigate(Screen.SeleccionJugador.route)
-                }
-            )
-        }
-
-        composable(Screen.SeleccionJugador.route) {
-            SeleccionJugadorScreen(
-                viewModel = sesionViewModel,
-                onCrearJugador = {
                     navController.navigate(Screen.RegistroJugador.route)
-                },
-                onVolver = {
-                    navController.popBackStack()
                 }
             )
         }
 
+        // Al registrarse o ingresar, la sesión se abre y AppNavigation cambia sola
         composable(Screen.RegistroJugador.route) {
             RegistroJugadorScreen(
                 viewModel = sesionViewModel,
@@ -292,26 +282,20 @@ private fun NavegacionPrincipal(
     } else {
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
-                NavigationBar {
-                    items.forEach { item ->
-                        NavigationBarItem(
-                            selected = rutaActual == item.screen.route,
-                            onClick = {
-                                irAPestana(item.screen.route)
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = item.icono,
-                                    contentDescription = stringResource(item.etiqueta)
-                                )
-                            },
-                            label = {
-                                Text(stringResource(item.etiqueta))
-                            }
+                BarraInferiorFlotante(
+                    items = items.map { item ->
+                        ItemBarraFlotante(
+                            ruta = item.screen.route,
+                            etiqueta = stringResource(item.etiqueta),
+                            icono = item.icono,
+                            destacado = item.screen == Screen.ScannerQR
                         )
-                    }
-                }
+                    },
+                    rutaActual = rutaActual,
+                    onSeleccion = irAPestana
+                )
             }
         ) { innerPadding ->
             navHost(
@@ -384,6 +368,7 @@ private fun AppNavHost(
         composable(Screen.Mapa.route) {
             MapaScreen(
                 viewModel = puntosViewModel,
+                esAdmin = rol == Rol.ADMINISTRADOR,
                 onVerDetalle = { puntoId ->
                     navController.navigate(
                         Screen.DetalleVideo.crearRuta(puntoId)

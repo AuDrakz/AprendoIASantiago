@@ -89,7 +89,9 @@ fun SeleccionJugadorScreen(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp))
                 .background(
-                    Brush.horizontalGradient(listOf(AzulMarino, AzulPrimario, Violeta))
+                    Brush.horizontalGradient(
+                        listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
+                    )
                 )
                 .statusBarsPadding()
                 .padding(start = 8.dp, end = 24.dp, top = 8.dp, bottom = 24.dp)
@@ -99,7 +101,7 @@ fun SeleccionJugadorScreen(
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.volver),
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
                 Column(modifier = Modifier.padding(start = 4.dp)) {
@@ -107,12 +109,12 @@ fun SeleccionJugadorScreen(
                         text = stringResource(R.string.seleccion_titulo),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                     Text(
                         text = stringResource(R.string.seleccion_subtitulo),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.85f)
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
                     )
                 }
             }
@@ -135,10 +137,11 @@ fun SeleccionJugadorScreen(
     }
 }
 
+@Composable
 private fun colorRol(rol: Rol): Color = when (rol) {
-    Rol.ADMINISTRADOR -> Naranja
-    Rol.GENERADOR -> Violeta
-    Rol.CLIENTE -> AzulPrimario
+    Rol.ADMINISTRADOR -> MaterialTheme.colorScheme.secondary
+    Rol.GENERADOR -> MaterialTheme.colorScheme.tertiary
+    Rol.CLIENTE -> MaterialTheme.colorScheme.primary
 }
 
 @Composable
@@ -182,7 +185,7 @@ private fun TarjetaJugador(jugador: PerfilUsuario, onClick: () -> Unit) {
                     text = stringResource(jugador.rol.etiqueta),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.background,
                     modifier = Modifier
                         .padding(top = 6.dp)
                         .clip(RoundedCornerShape(50))

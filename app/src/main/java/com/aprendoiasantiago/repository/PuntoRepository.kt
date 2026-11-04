@@ -136,29 +136,30 @@ class PuntoRepository(
         }
     }
 
-    /** Crea un Cliente y abre su sesión. Devuelve false si el correo ya existe. */
+    /** Crea un Cliente y abre su sesión. Avisa si el correo o el nombre ya existen. */
     suspend fun registrarJugador(
         nombre: String,
         email: String,
-        telefono: String,
-        direccion: String,
         avatar: Int,
         contrasena: String
-    ): Boolean {
-        if (perfilDao.contarPorEmail(email.trim(), excluirId = 0) > 0) return false
+    ): ResultadoRegistro {
+        if (perfilDao.contarPorEmail(email.trim(), excluirId = 0) > 0) {
+            return ResultadoRegistro.CORREO_DUPLICADO
+        }
+        if (perfilDao.contarPorNombre(nombre.trim()) > 0) {
+            return ResultadoRegistro.NOMBRE_DUPLICADO
+        }
 
         val id = perfilDao.insertar(
             PerfilEntity(
                 nombreUsuario = nombre.trim(),
                 email = email.trim(),
-                telefono = telefono.trim(),
-                direccion = direccion.trim(),
                 avatar = avatar,
                 contrasenaHash = Seguridad.hashear(contrasena)
             )
         )
         perfilDao.guardarSesion(SesionEntity(jugadorId = id.toInt()))
-        return true
+        return ResultadoRegistro.EXITO
     }
 
     /** Abre la sesión si la contraseña es correcta. */
@@ -167,6 +168,15 @@ class PuntoRepository(
         if (!Seguridad.verificar(contrasena, jugador.contrasenaHash)) return false
 
         perfilDao.guardarSesion(SesionEntity(jugadorId = jugadorId))
+        return true
+    }
+
+    /** Abre la sesión con nombre de usuario, alias o correo, más la contraseña. */
+    suspend fun iniciarSesionConCredencial(usuario: String, contrasena: String): Boolean {
+        val jugador = perfilDao.buscarPorCredencial(usuario.trim()) ?: return false
+        if (!Seguridad.verificar(contrasena, jugador.contrasenaHash)) return false
+
+        perfilDao.guardarSesion(SesionEntity(jugadorId = jugador.id))
         return true
     }
 

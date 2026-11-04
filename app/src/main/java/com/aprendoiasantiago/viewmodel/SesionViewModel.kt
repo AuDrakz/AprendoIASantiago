@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.aprendoiasantiago.repository.ResultadoRegistro
 
 /** Sesión, selección de jugador y registro de nuevos Clientes. */
 class SesionViewModel(
@@ -41,6 +42,16 @@ class SesionViewModel(
     fun iniciarSesion(jugadorId: Int, contrasena: String, onResultado: (Boolean) -> Unit) {
         viewModelScope.launch {
             onResultado(repositorio.iniciarSesion(jugadorId, contrasena))
+        }
+    }
+    /** Ingreso con nombre de usuario o correo, más la contraseña. */
+    fun iniciarSesionConCredencial(
+        usuario: String,
+        contrasena: String,
+        onResultado: (Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+            onResultado(repositorio.iniciarSesionConCredencial(usuario, contrasena))
         }
     }
 
@@ -90,42 +101,49 @@ class SesionViewModel(
     fun onAvatarCambia(valor: Int) =
         _registro.update { it.copy(avatar = valor) }
 
-    /** Valida todos los campos; si son válidos crea el jugador y abre su sesión. */
-    fun registrar() {
+    /** Valida nombre, correo y contraseña. true si todo es válido (todavía no crea nada). */
+    fun validarRegistro(): Boolean {
         val f = _registro.value
-        if (f.guardando) return
-
         val eNombre = ErroresFormulario.nombre(f.nombre)
         val eEmail = ErroresFormulario.email(f.email)
-        val eTelefono = ErroresFormulario.telefono(f.telefono)
         val eContrasena = ErroresFormulario.contrasena(f.contrasena)
 
         _registro.update {
             it.copy(
                 errorNombre = eNombre,
                 errorEmail = eEmail,
-                errorTelefono = eTelefono,
                 errorContrasena = eContrasena
             )
         }
-        if (listOf(eNombre, eEmail, eTelefono, eContrasena).any { it != null }) return
+        return listOf(eNombre, eEmail, eContrasena).all { it == null }
+    }
 
+    /** Crea el jugador y abre su sesión. Si el correo o el nombre ya existen, publica el error. */
+    fun registrar() {
+        if (_registro.value.guardando) return
+        if (!validarRegistro()) return
+
+        val f = _registro.value
         _registro.update { it.copy(guardando = true) }
+
         viewModelScope.launch {
-            val creado = repositorio.registrarJugador(
+            val resultado = repositorio.registrarJugador(
                 nombre = f.nombre,
                 email = f.email,
-                telefono = f.telefono,
-                direccion = f.direccion,
                 avatar = f.avatar,
                 contrasena = f.contrasena
             )
-            if (creado) {
-                _registro.value = RegistroUiState() // no deja la contraseña en memoria
-            } else {
-                _registro.update {
-                    it.copy(guardando = false, errorEmail = R.string.error_correo_duplicado)
-                }
+            when (resultado) {
+                ResultadoRegistro.EXITO ->
+                    _registro.value = RegistroUiState() // no deja la contraseña en memoria
+                ResultadoRegistro.CORREO_DUPLICADO ->
+                    _registro.update {
+                        it.copy(guardando = false, errorEmail = R.string.error_correo_duplicado)
+                    }
+                ResultadoRegistro.NOMBRE_DUPLICADO ->
+                    _registro.update {
+                        it.copy(guardando = false, errorNombre = R.string.error_nombre_duplicado)
+                    }
             }
         }
     }

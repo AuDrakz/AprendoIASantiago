@@ -28,3 +28,21 @@ val Violeta = Color(0xFF7C4DFF)
 val Naranja = Color(0xFFF57C00)
 val Verde = Color(0xFF22C55E)
 val FondoClaro = Color(0xFFF4F7FE)
+// Tema oscuro neón
+val NeonFondo = Color(0xFF070B1A)
+val NeonSuperficie = Color(0xFF111936)
+val NeonSuperficieVariante = Color(0xFF1B2550)
+val NeonCian = Color(0xFF22D3EE)
+val NeonVioleta = Color(0xFFA78BFA)
+val NeonLima = Color(0xFFA3E635)
+
+// Estados de los puntos
+val EstadoVisitado = Color(0xFF22C55E)
+val EstadoNoDescubierto = Color(0xFF8A94A6) // gris
+val EstadoAdmin = Color(0xFF7C4DFF)         // morado único del administrador
+
+// Modo daltonismo (paleta Okabe-Ito)
+val DaltonAzul = Color(0xFF0072B2)
+val DaltonCeleste = Color(0xFF56B4E9)
+val DaltonNaranja = Color(0xFFE69F00)
+val DaltonPurpura = Color(0xFFCC79A7)

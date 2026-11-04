@@ -112,7 +112,16 @@ class MainActivity : ComponentActivity() {
             val altoContraste by userPreferencesRepository.modoAltoContraste
                 .collectAsStateWithLifecycle(initialValue = false)
 
-            AprendoIASantiagoTheme(altoContraste = altoContraste) {
+            val daltonismo by userPreferencesRepository.modoDaltonismo
+                .collectAsStateWithLifecycle(initialValue = false)
+            val modoOscuro by userPreferencesRepository.modoOscuro
+                .collectAsStateWithLifecycle(initialValue = true)
+
+            AprendoIASantiagoTheme(
+                darkTheme = modoOscuro,
+                altoContraste = false,
+                daltonismo = daltonismo
+            ) {
                 val fabrica = AprendoIaViewModelFactory(repositorio)
 
                 val puntosViewModel: PuntosViewModel =

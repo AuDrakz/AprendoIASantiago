@@ -30,7 +30,20 @@ interface PerfilDao {
 
     @Query("SELECT COUNT(*) FROM perfil WHERE LOWER(email) = LOWER(:email) AND id != :excluirId")
     suspend fun contarPorEmail(email: String, excluirId: Int): Int
+    // Login: acepta correo, nombre de usuario o alias
+    @Query(
+        """
+        SELECT * FROM perfil
+        WHERE LOWER(email) = LOWER(:texto)
+           OR LOWER(nombreUsuario) = LOWER(:texto)
+           OR LOWER(alias) = LOWER(:texto)
+        LIMIT 1
+        """
+    )
+    suspend fun buscarPorCredencial(texto: String): PerfilEntity?
 
+    @Query("SELECT COUNT(*) FROM perfil WHERE LOWER(nombreUsuario) = LOWER(:nombre) OR LOWER(alias) = LOWER(:nombre)")
+    suspend fun contarPorNombre(nombre: String): Int
     @Insert
     suspend fun insertar(perfil: PerfilEntity): Long
 

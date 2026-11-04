@@ -14,6 +14,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.rounded.Face
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,6 +58,8 @@ fun PerfilRankingScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val altoContrasteActivo by userPreferencesRepository.modoAltoContraste.collectAsState(initial = false)
+    val daltonismoActivo by userPreferencesRepository.modoDaltonismo.collectAsState(initial = false)
+    val oscuroActivo by userPreferencesRepository.modoOscuro.collectAsState(initial = true)
     val alcance = rememberCoroutineScope()
 
     PerfilRankingContent(
@@ -65,6 +71,10 @@ fun PerfilRankingScreen(
                 userPreferencesRepository.guardarModoAltoContraste(nuevoEstado)
             }
         },
+        daltonismoActivo = daltonismoActivo,
+        onDaltonismoCambiado = { alcance.launch { userPreferencesRepository.guardarModoDaltonismo(it) } },
+        oscuroActivo = oscuroActivo,
+        onOscuroCambiado = { alcance.launch { userPreferencesRepository.guardarModoOscuro(it) } },
         onEditarPerfil = onEditarPerfil,
         onCerrarSesion = onCerrarSesion
     )
@@ -77,6 +87,10 @@ fun PerfilRankingContent(
     ranking: List<EntradaRanking>,
     altoContrasteActivo: Boolean,
     onAltoContrasteCambiado: (Boolean) -> Unit,
+    daltonismoActivo: Boolean = false,
+    onDaltonismoCambiado: (Boolean) -> Unit = {},
+    oscuroActivo: Boolean = true,
+    onOscuroCambiado: (Boolean) -> Unit = {},
     onEditarPerfil: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
@@ -94,6 +108,10 @@ fun PerfilRankingContent(
                     perfil = perfil,
                     altoContrasteActivo = altoContrasteActivo,
                     onAltoContrasteCambiado = onAltoContrasteCambiado,
+                    daltonismoActivo = daltonismoActivo,
+                    onDaltonismoCambiado = onDaltonismoCambiado,
+                    oscuroActivo = oscuroActivo,
+                    onOscuroCambiado = onOscuroCambiado,
                     onEditarPerfil = onEditarPerfil,
                     onCerrarSesion = onCerrarSesion
                 )
@@ -122,6 +140,10 @@ private fun TarjetaResumen(
     perfil: PerfilUsuario,
     altoContrasteActivo: Boolean,
     onAltoContrasteCambiado: (Boolean) -> Unit,
+    daltonismoActivo: Boolean,
+    onDaltonismoCambiado: (Boolean) -> Unit,
+    oscuroActivo: Boolean,
+    onOscuroCambiado: (Boolean) -> Unit,
     onEditarPerfil: () -> Unit,
     onCerrarSesion: () -> Unit
 ) {
@@ -158,21 +180,10 @@ private fun TarjetaResumen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Interruptor de Alto Contraste (DataStore)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.ajustes_alto_contraste),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Switch(
-                    checked = altoContrasteActivo,
-                    onCheckedChange = onAltoContrasteCambiado
-                )
-            }
+            // Ajustes visuales (DataStore)
+            FilaAjuste(Icons.Rounded.Settings, stringResource(R.string.ajustes_modo_oscuro), oscuroActivo, onOscuroCambiado)
+            FilaAjuste(Icons.Rounded.Face, stringResource(R.string.ajustes_daltonismo), daltonismoActivo, onDaltonismoCambiado)
+
 
             Spacer(Modifier.height(16.dp))
 
@@ -187,6 +198,30 @@ private fun TarjetaResumen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun FilaAjuste(
+    icono: ImageVector,
+    texto: String,
+    activo: Boolean,
+    onCambio: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icono, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Text(
+                text = texto,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(start = 12.dp)
+            )
+        }
+        Switch(checked = activo, onCheckedChange = onCambio)
     }
 }
 
