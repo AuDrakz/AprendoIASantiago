@@ -25,6 +25,7 @@ import com.aprendoiasantiago.viewmodel.EscanerViewModel
 import com.aprendoiasantiago.viewmodel.PerfilViewModel
 import com.aprendoiasantiago.viewmodel.PuntosViewModel
 import com.aprendoiasantiago.viewmodel.SesionViewModel
+import android.view.View
 
 class MainActivity : ComponentActivity() {
 
@@ -105,6 +106,7 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.decorView.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
         enableEdgeToEdge()
 
         solicitarPermisosEIniciarServicio()
