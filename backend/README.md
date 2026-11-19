@@ -44,7 +44,7 @@ Desde un teléfono físico, usa la IP del PC en la misma red wifi.
 | PUT | `/api/jugadores/{id}` | Actualiza datos (no los puntos) | 200, 400, 404, 409 |
 | DELETE | `/api/jugadores/{id}` | Elimina jugador y sus visitas | 204, 404 |
 | GET | `/api/jugadores/{id}/visitas` | Visitas del jugador | 200, 404 |
-| POST | `/api/jugadores/{id}/visitas` | Registra visita y suma puntos | 201, 400, 404, 409 (ya visitado) |
+| POST | /api/jugadores/{id}/visitas | Registra visita; la recompensa la consulta a ms-puntos | 201, 400, 404, 409 (ya visitado), 503 (ms-puntos caído) |
 | GET | `/api/ranking` | Ranking ordenado por puntos | 200 |
 
 Errores: siempre JSON `{ "estado": 400, "mensaje": "...", "detalles": ["campo: motivo"] }`.
@@ -71,5 +71,4 @@ curl -X POST http://localhost:8082/api/jugadores/3/visitas -H "Content-Type: app
 
 ## Pendiente
 - Contraseñas y login: hoy siguen en la app (Room). Decidir si pasan al backend.
-- ms-jugadores confía en los `puntos` que manda la app; lo más sólido es que consulte a ms-puntos (RestClient) por la recompensa real del punto.
 - Probar con MySQL, y agregar tests de controller (`@WebMvcTest`).
