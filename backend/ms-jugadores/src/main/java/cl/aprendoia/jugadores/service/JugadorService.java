@@ -8,6 +8,8 @@ import cl.aprendoia.jugadores.model.Jugador;
 import cl.aprendoia.jugadores.model.Visita;
 import cl.aprendoia.jugadores.repository.JugadorRepository;
 import cl.aprendoia.jugadores.repository.VisitaRepository;
+import cl.aprendoia.jugadores.client.PuntosClient;
+import cl.aprendoia.jugadores.dto.PuntoDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +21,12 @@ public class JugadorService {
 
     private final JugadorRepository jugadores;
     private final VisitaRepository visitas;
+    private final PuntosClient puntos;
 
-    public JugadorService(JugadorRepository jugadores, VisitaRepository visitas) {
+    public JugadorService(JugadorRepository jugadores, VisitaRepository visitas, PuntosClient puntos) {
         this.jugadores = jugadores;
         this.visitas = visitas;
+        this.puntos = puntos;
     }
 
     public List<Jugador> listar() {
@@ -90,14 +94,17 @@ public class JugadorService {
      */
     @Transactional
     public Jugador registrarVisita(Long jugadorId, VisitaRequest solicitud) {
-        Jugador jugador = obtener(jugadorId);
+    Jugador jugador = obtener(jugadorId);
 
-        if (visitas.existsByJugadorIdAndPuntoId(jugadorId, solicitud.puntoId())) {
-            throw new ConflictoException("El jugador ya visitó este punto");
-        }
-
-        visitas.save(new Visita(jugadorId, solicitud.puntoId(), LocalDateTime.now()));
-        jugador.setPuntos(jugador.getPuntos() + solicitud.puntos());
-        return jugadores.save(jugador);
+    if (visitas.existsByJugadorIdAndPuntoId(jugadorId, solicitud.puntoId())) {
+        throw new ConflictoException("El jugador ya visitó este punto");
     }
+
+    // La recompensa la decide ms-puntos, no la app
+    PuntoDto punto = puntos.obtenerPunto(solicitud.puntoId());
+
+    visitas.save(new Visita(jugadorId, solicitud.puntoId(), LocalDateTime.now()));
+    jugador.setPuntos(jugador.getPuntos() + punto.puntosRecompensa());
+    return jugadores.save(jugador);
+}
 }
