@@ -8,6 +8,9 @@ import cl.aprendoia.jugadores.model.Jugador;
 import cl.aprendoia.jugadores.model.Rol;
 import cl.aprendoia.jugadores.repository.JugadorRepository;
 import cl.aprendoia.jugadores.repository.VisitaRepository;
+import cl.aprendoia.jugadores.client.PuntosClient;
+import cl.aprendoia.jugadores.dto.PuntoDto;
+import cl.aprendoia.jugadores.exception.ServicioNoDisponibleException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,6 +35,9 @@ class JugadorServiceTest {
 
     @Mock
     private VisitaRepository visitas;
+
+    @Mock
+    private PuntosClient puntos;
 
     @InjectMocks
     private JugadorService servicio;
@@ -66,13 +72,14 @@ class JugadorServiceTest {
     }
 
     @Test
-    void registrarVisita_sumaLosPuntosDelPunto() {
+    void registrarVisita_sumaLaRecompensaQueDevuelveMsPuntos() {
         Jugador ana = jugador("ana", 20);
         when(jugadores.findById(1L)).thenReturn(Optional.of(ana));
         when(visitas.existsByJugadorIdAndPuntoId(1L, 7L)).thenReturn(false);
+        when(puntos.obtenerPunto(7L)).thenReturn(new PuntoDto(7L, 10));
         when(jugadores.save(ana)).thenReturn(ana);
 
-        Jugador resultado = servicio.registrarVisita(1L, new VisitaRequest(7L, 10));
+        Jugador resultado = servicio.registrarVisita(1L, new VisitaRequest(7L));
 
         assertEquals(30, resultado.getPuntos());
         verify(visitas).save(any());
@@ -85,8 +92,34 @@ class JugadorServiceTest {
         when(visitas.existsByJugadorIdAndPuntoId(1L, 7L)).thenReturn(true);
 
         assertThrows(ConflictoException.class,
-                () -> servicio.registrarVisita(1L, new VisitaRequest(7L, 10)));
+                () -> servicio.registrarVisita(1L, new VisitaRequest(7L)));
         assertEquals(20, ana.getPuntos());
+        verify(puntos, never()).obtenerPunto(any());
+        verify(visitas, never()).save(any());
+    }
+
+    @Test
+    void registrarVisita_noGuardaNadaSiElPuntoNoExiste() {
+        Jugador ana = jugador("ana", 20);
+        when(jugadores.findById(1L)).thenReturn(Optional.of(ana));
+        when(visitas.existsByJugadorIdAndPuntoId(1L, 99L)).thenReturn(false);
+        when(puntos.obtenerPunto(99L)).thenThrow(new RecursoNoEncontradoException("No existe el punto con id 99"));
+
+        assertThrows(RecursoNoEncontradoException.class,
+                () -> servicio.registrarVisita(1L, new VisitaRequest(99L)));
+        assertEquals(20, ana.getPuntos());
+        verify(visitas, never()).save(any());
+    }
+
+    @Test
+    void registrarVisita_propagaElErrorSiMsPuntosEstaCaido() {
+        Jugador ana = jugador("ana", 20);
+        when(jugadores.findById(1L)).thenReturn(Optional.of(ana));
+        when(visitas.existsByJugadorIdAndPuntoId(1L, 7L)).thenReturn(false);
+        when(puntos.obtenerPunto(7L)).thenThrow(new ServicioNoDisponibleException("caído"));
+
+        assertThrows(ServicioNoDisponibleException.class,
+                () -> servicio.registrarVisita(1L, new VisitaRequest(7L)));
         verify(visitas, never()).save(any());
     }
 

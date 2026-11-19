@@ -33,6 +33,11 @@ public class ManejadorErrores {
         return construir(HttpStatus.BAD_REQUEST, "Datos inválidos", detalles);
     }
 
+    @ExceptionHandler(ServicioNoDisponibleException.class)
+    public ResponseEntity<ErrorApi> noDisponible(ServicioNoDisponibleException e) {
+    return construir(HttpStatus.SERVICE_UNAVAILABLE, e.getMessage(), List.of());
+    }   
+
     private ResponseEntity<ErrorApi> construir(HttpStatus estado, String mensaje, List<String> detalles) {
         return ResponseEntity.status(estado).body(new ErrorApi(estado.value(), mensaje, detalles));
     }
