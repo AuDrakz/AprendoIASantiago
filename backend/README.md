@@ -23,6 +23,8 @@ Consola de la BD: `http://localhost:8081/h2-console` y `:8082/h2-console`
 Desde el emulador de Android, el PC se ve como `http://10.0.2.2:8081/` y `:8082`.
 Desde un teléfono físico, usa la IP del PC en la misma red wifi.
 
+Para registrar visitas deben estar corriendo **ambos** servicios, porque ms-jugadores consulta a ms-puntos (URL configurable con `ms-puntos.url` en `application.properties`).
+
 ## Endpoints
 
 ### ms-puntos (`/api/puntos`)
@@ -44,7 +46,7 @@ Desde un teléfono físico, usa la IP del PC en la misma red wifi.
 | PUT | `/api/jugadores/{id}` | Actualiza datos (no los puntos) | 200, 400, 404, 409 |
 | DELETE | `/api/jugadores/{id}` | Elimina jugador y sus visitas | 204, 404 |
 | GET | `/api/jugadores/{id}/visitas` | Visitas del jugador | 200, 404 |
-| POST | /api/jugadores/{id}/visitas | Registra visita; la recompensa la consulta a ms-puntos | 201, 400, 404, 409 (ya visitado), 503 (ms-puntos caído) |
+| POST | `/api/jugadores/{id}/visitas` | Registra visita (body: `{ "puntoId": 1 }`); la recompensa la consulta a ms-puntos | 201, 400, 404, 409 (ya visitado), 503 (ms-puntos caído) |
 | GET | `/api/ranking` | Ranking ordenado por puntos | 200 |
 
 Errores: siempre JSON `{ "estado": 400, "mensaje": "...", "detalles": ["campo: motivo"] }`.
@@ -59,7 +61,7 @@ curl -X POST http://localhost:8081/api/puntos -H "Content-Type: application/json
 
 curl http://localhost:8082/api/ranking
 curl -X POST http://localhost:8082/api/jugadores/3/visitas -H "Content-Type: application/json" \
-  -d '{"puntoId":1,"puntos":10}'
+-d '{"puntoId":1}'
 ```
 
 ## Decisiones de diseño (para la defensa)
@@ -67,6 +69,7 @@ curl -X POST http://localhost:8082/api/jugadores/3/visitas -H "Content-Type: app
 - **Por qué dos microservicios:** el catálogo de puntos casi no cambia y lo lee toda la app; los jugadores y el ranking cambian con cada visita. Cada uno escala y se modifica por separado.
 - **"Visitado" no está en `Punto`:** es un dato por jugador, por eso vive en la tabla `visitas` de ms-jugadores (restricción única jugador+punto, igual que la regla actual de no sumar dos veces).
 - **Visita + puntos en una transacción** (`@Transactional`): se guardan las dos cosas o ninguna.
+- **ms-jugadores consulta a ms-puntos** (`RestClient`) para obtener la recompensa real del punto, en vez de confiar en lo que mande la app. Si ms-puntos no responde, devuelve 503 y no guarda la visita (la consulta se hace antes de guardar).
 - **Pruebas:** JUnit 5 + Mockito sobre los servicios; el repositorio se mockea, así que no necesitan base de datos.
 
 ## Pendiente
