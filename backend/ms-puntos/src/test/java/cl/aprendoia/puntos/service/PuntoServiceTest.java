@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,6 +35,13 @@ class PuntoServiceTest {
     }
 
     @Test
+    void listar_devuelveTodosLosPuntosDelRepositorio() {
+        when(repositorio.findAll()).thenReturn(List.of(punto("QR_A"), punto("QR_B")));
+
+        assertEquals(2, servicio.listar().size());
+    }
+
+    @Test
     void obtener_devuelveElPuntoSiExiste() {
         Punto esperado = punto("QR_1");
         when(repositorio.findById(1L)).thenReturn(Optional.of(esperado));
@@ -46,6 +54,20 @@ class PuntoServiceTest {
         when(repositorio.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(RecursoNoEncontradoException.class, () -> servicio.obtener(99L));
+    }
+
+    @Test
+    void obtenerPorQr_devuelveElPuntoSiExiste() {
+        when(repositorio.findByCodigoQR("QR_1")).thenReturn(Optional.of(punto("QR_1")));
+
+        assertEquals("QR_1", servicio.obtenerPorQr("QR_1").getCodigoQR());
+    }
+
+    @Test
+    void obtenerPorQr_lanzaExcepcionSiNoExiste() {
+        when(repositorio.findByCodigoQR("QR_NO")).thenReturn(Optional.empty());
+
+        assertThrows(RecursoNoEncontradoException.class, () -> servicio.obtenerPorQr("QR_NO"));
     }
 
     @Test
@@ -67,6 +89,21 @@ class PuntoServiceTest {
     }
 
     @Test
+    void actualizar_modificaLosCamposYGuardaSinConsultarElQrSiNoCambia() {
+        Punto existente = punto("QR_A");
+        Punto datos = new Punto("Nuevo titulo", "NLP 2", -33.0, -70.0, "QR_A", 25, "https://aprendoia.cl/n.mp4");
+        when(repositorio.findById(1L)).thenReturn(Optional.of(existente));
+        when(repositorio.save(existente)).thenReturn(existente);
+
+        Punto resultado = servicio.actualizar(1L, datos);
+
+        assertEquals("Nuevo titulo", resultado.getTitulo());
+        assertEquals(25, resultado.getPuntosRecompensa());
+        verify(repositorio).save(existente);
+        verify(repositorio, never()).existsByCodigoQR(any());
+    }
+
+    @Test
     void actualizar_rechazaCambiarAUnQrQueYaUsaOtroPunto() {
         Punto existente = punto("QR_A");
         when(repositorio.findById(1L)).thenReturn(Optional.of(existente));
@@ -83,5 +120,13 @@ class PuntoServiceTest {
         servicio.eliminar(1L);
 
         verify(repositorio).delete(existente);
+    }
+
+    @Test
+    void eliminar_lanzaExcepcionSiNoExisteYNoBorraNada() {
+        when(repositorio.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(RecursoNoEncontradoException.class, () -> servicio.eliminar(99L));
+        verify(repositorio, never()).delete(any());
     }
 }

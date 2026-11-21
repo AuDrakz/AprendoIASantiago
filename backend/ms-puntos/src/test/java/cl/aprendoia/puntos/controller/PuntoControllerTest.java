@@ -14,12 +14,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -126,5 +129,64 @@ class PuntoControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(servicio).eliminar(1L);
+    }
+
+    @Test
+    void obtener_devuelve200SiExiste() throws Exception {
+        when(servicio.obtener(1L)).thenReturn(punto());
+
+        mockMvc.perform(get("/api/puntos/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.titulo").value("Plaza de Armas"));
+    }
+
+    @Test
+    void obtenerPorQr_devuelve200SiExiste() throws Exception {
+        when(servicio.obtenerPorQr("QR_PLAZA_02")).thenReturn(punto());
+
+        mockMvc.perform(get("/api/puntos/qr/QR_PLAZA_02"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.codigoQR").value("QR_PLAZA_02"));
+    }
+
+    @Test
+    void actualizar_devuelve200ConDatosValidos() throws Exception {
+        when(servicio.actualizar(eq(1L), any(Punto.class))).thenReturn(punto());
+
+        mockMvc.perform(put("/api/puntos/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON_VALIDO))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.puntosRecompensa").value(10));
+    }
+
+    @Test
+    void actualizar_devuelve404SiElPuntoNoExiste() throws Exception {
+        when(servicio.actualizar(eq(99L), any(Punto.class)))
+                .thenThrow(new RecursoNoEncontradoException("No existe el punto con id 99"));
+
+        mockMvc.perform(put("/api/puntos/99")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON_VALIDO))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void actualizar_devuelve400ConDatosInvalidosYNoLlamaAlServicio() throws Exception {
+        mockMvc.perform(put("/api/puntos/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON_INVALIDO))
+                .andExpect(status().isBadRequest());
+
+        verify(servicio, never()).actualizar(any(), any());
+    }
+
+    @Test
+    void eliminar_devuelve404SiElPuntoNoExiste() throws Exception {
+        doThrow(new RecursoNoEncontradoException("No existe el punto con id 99"))
+                .when(servicio).eliminar(99L);
+
+        mockMvc.perform(delete("/api/puntos/99"))
+                .andExpect(status().isNotFound());
     }
 }

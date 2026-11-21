@@ -7,6 +7,7 @@ import cl.aprendoia.jugadores.exception.RecursoNoEncontradoException;
 import cl.aprendoia.jugadores.exception.ServicioNoDisponibleException;
 import cl.aprendoia.jugadores.model.Jugador;
 import cl.aprendoia.jugadores.model.Rol;
+import cl.aprendoia.jugadores.model.Visita;
 import cl.aprendoia.jugadores.service.JugadorService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,15 +16,19 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -191,5 +196,92 @@ class JugadorControllerTest {
                 .andExpect(jsonPath("$[0].nombre").value("Camila R."))
                 .andExpect(jsonPath("$[0].puntos").value(460))
                 .andExpect(jsonPath("$[1].nombre").value("Matias R."));
+    }
+
+    // 11
+    @Test
+    void obtener_devuelve200SiExiste() throws Exception {
+        when(servicio.obtener(4L)).thenReturn(jugador("matias", 310));
+
+        mockMvc.perform(get("/api/jugadores/4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombreUsuario").value("matias"))
+                .andExpect(jsonPath("$.puntos").value(310));
+    }
+
+    // 12
+    @Test
+    void actualizar_devuelve200ConDatosValidos() throws Exception {
+        when(servicio.actualizar(eq(4L), any(Jugador.class))).thenReturn(jugador("ana", 0));
+
+        mockMvc.perform(put("/api/jugadores/4")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JUGADOR_VALIDO))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombreUsuario").value("ana"));
+    }
+
+    // 13
+    @Test
+    void actualizar_devuelve404SiElJugadorNoExiste() throws Exception {
+        when(servicio.actualizar(eq(99L), any(Jugador.class)))
+                .thenThrow(new RecursoNoEncontradoException("No existe el jugador con id 99"));
+
+        mockMvc.perform(put("/api/jugadores/99")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JUGADOR_VALIDO))
+                .andExpect(status().isNotFound());
+    }
+
+    // 14
+    @Test
+    void actualizar_devuelve400ConEmailInvalidoYNoLlamaAlServicio() throws Exception {
+        mockMvc.perform(put("/api/jugadores/4")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JUGADOR_EMAIL_INVALIDO))
+                .andExpect(status().isBadRequest());
+
+        verify(servicio, never()).actualizar(any(), any());
+    }
+
+    // 15
+    @Test
+    void eliminar_devuelve204() throws Exception {
+        mockMvc.perform(delete("/api/jugadores/4"))
+                .andExpect(status().isNoContent());
+
+        verify(servicio).eliminar(4L);
+    }
+
+    // 16
+    @Test
+    void eliminar_devuelve404SiElJugadorNoExiste() throws Exception {
+        doThrow(new RecursoNoEncontradoException("No existe el jugador con id 99"))
+                .when(servicio).eliminar(99L);
+
+        mockMvc.perform(delete("/api/jugadores/99"))
+                .andExpect(status().isNotFound());
+    }
+
+    // 17
+    @Test
+    void visitas_devuelve200ConLasVisitasDelJugador() throws Exception {
+        when(servicio.visitasDe(4L))
+                .thenReturn(List.of(new Visita(4L, 1L, LocalDateTime.of(2026, 11, 21, 12, 0))));
+
+        mockMvc.perform(get("/api/jugadores/4/visitas"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].jugadorId").value(4))
+                .andExpect(jsonPath("$[0].puntoId").value(1));
+    }
+
+    // 18
+    @Test
+    void visitas_devuelve404SiElJugadorNoExiste() throws Exception {
+        when(servicio.visitasDe(99L))
+                .thenThrow(new RecursoNoEncontradoException("No existe el jugador con id 99"));
+
+        mockMvc.perform(get("/api/jugadores/99/visitas"))
+                .andExpect(status().isNotFound());
     }
 }
