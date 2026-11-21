@@ -54,11 +54,27 @@ todavía no estaba visitado, aunque se escanee dos veces seguidas.
 Durante el desarrollo, si se cambia una entidad hay que subir `version` en
 `AppDatabase`. La base se recrea con `fallbackToDestructiveMigration`.
 
+## Requisitos para ejecutar
+- Android Studio reciente.
+- JDK 17 o superior (probado con JDK 21).
+- Android SDK instalado (se gestiona desde Tools > SDK Manager).
+- Emulador o teléfono con Android 8.0 (API 26) o superior. El escáner QR necesita cámara y permiso para usarla.
+
+En Android Studio, verificar que el JDK de Gradle sea 17 o 21:
+Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JDK
+(o "Gradle JVM criteria" > Version). Si está en una versión más nueva
+(por ejemplo 25), el build puede fallar.
+
+El archivo `local.properties` (ruta del SDK) no se sube al repositorio porque
+es específico de cada computador. Android Studio lo genera automáticamente al
+abrir el proyecto con File > Open.
+
 ## Cómo ejecutarla
-1. Clonar el repositorio y abrirlo con Android Studio.
-2. Esperar la sincronización de Gradle.
-3. Ejecutar en un emulador o teléfono con Android 8.0 (API 26) o superior.
-   El escáner QR necesita cámara y permiso para usarla.
+1. Clonar el repositorio y abrirlo con Android Studio (File > Open).
+2. Verificar que el JDK de Gradle sea 17 o 21 (ver "Requisitos para ejecutar").
+3. Esperar la sincronización de Gradle.
+4. Ejecutar en un emulador o teléfono con Android 8.0 (API 26) o superior.
+   Para un teléfono físico, activar Opciones de desarrollador y Depuración USB.
 
 ## Funcionalidades actuales
 - Lista de puntos de interés con filtros (todos, pendientes y visitados).

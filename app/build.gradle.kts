@@ -36,6 +36,10 @@ android {
     }
 }
 
+kotlin {
+    jvmToolchain(21)
+}
+
 dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation(platform(libs.androidx.compose.bom))
