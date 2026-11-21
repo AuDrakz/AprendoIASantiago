@@ -15,7 +15,7 @@ Requisitos: JDK 17 o superior y Maven (o abrir cada carpeta en IntelliJ / VS Cod
 ```bash
 cd ms-puntos     && mvn spring-boot:run     # http://localhost:8081
 cd ms-jugadores  && mvn spring-boot:run     # http://localhost:8082
-mvn test                                    # pruebas unitarias (en cada carpeta)
+mvn test                                    # pruebas unitarias + reporte de cobertura (en cada carpeta)
 ```
 Consola de la BD: `http://localhost:8081/h2-console` y `:8082/h2-console`
 (JDBC URL `jdbc:h2:file:./data/puntosdb`, usuario `sa`, sin clave).
@@ -64,14 +64,26 @@ curl -X POST http://localhost:8082/api/jugadores/3/visitas -H "Content-Type: app
 -d '{"puntoId":1}'
 ```
 
+## Pruebas y cobertura
+| Microservicio | Tests | Cobertura (instrucciones) |
+|---|---|---|
+| `ms-puntos` | 23 (11 de servicio + 12 de controller) | 84,3 % |
+| `ms-jugadores` | 38 (16 de servicio + 18 de controller + 4 del cliente HTTP) | 86,5 % |
+
+- **Servicios:** JUnit 5 + Mockito; el repositorio se mockea, así que no necesitan base de datos.
+- **Controllers:** `@WebMvcTest` + MockMvc; validan rutas, JSON, validaciones y códigos 200, 201, 204, 400, 404, 409 y 503 con el servicio mockeado.
+- **Cliente HTTP (`PuntosClient`):** `MockRestServiceServer` simula las respuestas de ms-puntos (200, 404, 500 y sin conexión).
+- **Cobertura:** se mide con JaCoCo al ejecutar `mvn test`; el reporte queda en `target/site/jacoco/index.html`. Quedan sin cubrir la clase de arranque (`main`), la siembra de datos iniciales (`DatosIniciales`) y los setters de `Visita`, que no tienen lógica de negocio.
+
 ## Decisiones de diseño (para la defensa)
 - **Capas:** controller (HTTP) → service (reglas de negocio) → repository (JPA). Es el equivalente a ViewModel → Repository → DAO de la app.
 - **Por qué dos microservicios:** el catálogo de puntos casi no cambia y lo lee toda la app; los jugadores y el ranking cambian con cada visita. Cada uno escala y se modifica por separado.
 - **"Visitado" no está en `Punto`:** es un dato por jugador, por eso vive en la tabla `visitas` de ms-jugadores (restricción única jugador+punto, igual que la regla actual de no sumar dos veces).
 - **Visita + puntos en una transacción** (`@Transactional`): se guardan las dos cosas o ninguna.
 - **ms-jugadores consulta a ms-puntos** (`RestClient`) para obtener la recompensa real del punto, en vez de confiar en lo que mande la app. Si ms-puntos no responde, devuelve 503 y no guarda la visita (la consulta se hace antes de guardar).
-- **Pruebas:** JUnit 5 + Mockito sobre los servicios; el repositorio se mockea, así que no necesitan base de datos.
+- **Errores uniformes:** un `@RestControllerAdvice` (`ManejadorErrores`) traduce las excepciones del servicio a códigos HTTP (404, 409, 400 de validación y 503).
 
 ## Pendiente
 - Contraseñas y login: hoy siguen en la app (Room). Decidir si pasan al backend.
-- Probar con MySQL, y agregar tests de controller (`@WebMvcTest`).
+- Probar con MySQL en vez de H2.
+- Configurar tiempos límite (timeout) en el `RestClient` que llama a ms-puntos: hoy, si ms-puntos tarda en responder, la petición espera sin límite.
