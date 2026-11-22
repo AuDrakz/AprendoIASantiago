@@ -37,7 +37,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aprendoiasantiago.R
+import com.aprendoiasantiago.data.remote.EstadoRed
 import com.aprendoiasantiago.model.PuntoInteres
+import com.aprendoiasantiago.ui.components.BannerEstadoRed
 import com.aprendoiasantiago.ui.components.FondoNeon
 import com.aprendoiasantiago.ui.components.TarjetaPunto
 import com.aprendoiasantiago.viewmodel.FiltroPuntos
@@ -52,6 +54,8 @@ fun ListaPuntosScreen(
     onVerDetalle: (Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // NUEVO: estado de la conexión con el servidor
+    val estadoRed by viewModel.estadoRed.collectAsStateWithLifecycle()
 
     ListaPuntosContent(
         puntos = uiState.puntosFiltrados,
@@ -60,7 +64,10 @@ fun ListaPuntosScreen(
         filtroActual = uiState.filtro,
         onFiltroChange = viewModel::cambiarFiltro,
         onEscanearClick = { onIrAEscaner() },
-        onVerDetalleClick = { punto -> onVerDetalle(punto.id) }
+        onVerDetalleClick = { punto -> onVerDetalle(punto.id) },
+        // NUEVO: aviso de sincronización y botón "Reintentar"
+        estadoRed = estadoRed,
+        onReintentar = viewModel::reintentarSincronizacion
     )
 }
 
@@ -73,12 +80,18 @@ fun ListaPuntosContent(
     onEscanearClick: (PuntoInteres) -> Unit,
     onVerDetalleClick: (PuntoInteres) -> Unit,
     total: Int = puntos.size,
-    descubiertos: Int = puntos.count { it.fueVisitado }
+    descubiertos: Int = puntos.count { it.fueVisitado },
+    // NUEVO: con valores por defecto, así no se rompen las previews ni otras llamadas
+    estadoRed: EstadoRed = EstadoRed.Inactivo,
+    onReintentar: () -> Unit = {}
 ) {
     FondoNeon {
         Column(modifier = Modifier.fillMaxSize()) {
             EncabezadoLista(total = total, descubiertos = descubiertos)
             FiltrosLista(filtroActual = filtroActual, onFiltroChange = onFiltroChange)
+
+            // NUEVO: barra de "Sincronizando…" o mensaje de error con "Reintentar"
+            BannerEstadoRed(estado = estadoRed, onReintentar = onReintentar)
 
             if (puntos.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

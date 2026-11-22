@@ -29,6 +29,9 @@ class EscanerViewModel(
             )
 
             onResultado(resultado)
+
+            // NUEVO: visita nueva -> se sube al servidor y se actualiza el ranking
+            if (resultado is ResultadoEscaneo.Exito) repositorio.sincronizar()
         }
     }
     fun registrarSelfie(
@@ -45,6 +48,9 @@ class EscanerViewModel(
                 codigoLeido, latitudUsuario, longitudUsuario, altitudUsuario, ruta
             )
             onResultado(resultado, bonus)
+
+            // NUEVO: igual que arriba, si la visita fue nueva se sincroniza con el servidor
+            if (resultado is ResultadoEscaneo.Exito) repositorio.sincronizar()
         }
     }
 }

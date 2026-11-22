@@ -10,6 +10,9 @@ data class PerfilUiState(
 ) {
     /** Ranking de otros estudiantes + usuario acutal, ordenado por puntos */
     val ranking: List<EntradaRanking>
-        get() = (rankingBase + EntradaRanking(perfil.nombreUsuario, perfil.puntosTotales, true))
-            .sortedByDescending { it.puntos }
+        get() = (
+                // NUEVO: el servidor ya incluye al jugador actual; se quita para no mostrarlo dos veces
+                rankingBase.filterNot { it.nombre.equals(perfil.nombreUsuario, ignoreCase = true) } +
+                        EntradaRanking(perfil.nombreUsuario, perfil.puntosTotales, true)
+                ).sortedByDescending { it.puntos }
 }

@@ -41,7 +41,10 @@ class SesionViewModel(
     /** Si la contraseña es correcta abre la sesión; la navegación reacciona sola. */
     fun iniciarSesion(jugadorId: Int, contrasena: String, onResultado: (Boolean) -> Unit) {
         viewModelScope.launch {
-            onResultado(repositorio.iniciarSesion(jugadorId, contrasena))
+            val correcto = repositorio.iniciarSesion(jugadorId, contrasena)
+            onResultado(correcto)
+            // NUEVO: con sesión abierta se sincroniza con el servidor
+            if (correcto) repositorio.sincronizar()
         }
     }
     /** Ingreso con nombre de usuario o correo, más la contraseña. */
@@ -51,7 +54,10 @@ class SesionViewModel(
         onResultado: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
-            onResultado(repositorio.iniciarSesionConCredencial(usuario, contrasena))
+            val correcto = repositorio.iniciarSesionConCredencial(usuario, contrasena)
+            onResultado(correcto)
+            // NUEVO: con sesión abierta se sincroniza con el servidor
+            if (correcto) repositorio.sincronizar()
         }
     }
 
@@ -134,8 +140,11 @@ class SesionViewModel(
                 contrasena = f.contrasena
             )
             when (resultado) {
-                ResultadoRegistro.EXITO ->
+                ResultadoRegistro.EXITO -> {
                     _registro.value = RegistroUiState() // no deja la contraseña en memoria
+                    // NUEVO: registra al jugador nuevo en el servidor
+                    repositorio.sincronizar()
+                }
                 ResultadoRegistro.CORREO_DUPLICADO ->
                     _registro.update {
                         it.copy(guardando = false, errorEmail = R.string.error_correo_duplicado)

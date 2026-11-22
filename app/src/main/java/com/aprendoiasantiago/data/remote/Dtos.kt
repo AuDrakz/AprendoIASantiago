@@ -1,6 +1,5 @@
 package com.aprendoiasantiago.data.remote
 
-package com.aprendoiasantiago.data.remote
 
 /** Punto de interés tal como lo envía y recibe ms-puntos (/api/puntos). */
 data class PuntoDto(
