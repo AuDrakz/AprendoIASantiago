@@ -48,4 +48,14 @@
     <string name="gestion_eliminar_punto_texto">Se eliminará %1$s junto con su cápsula y su código QR.</string>
     <string name="gestion_eliminar_jugador_titulo">¿Eliminar jugador?</string>
     <string name="gestion_eliminar_jugador_texto">Se eliminará a %1$s. Esta acción no se puede deshacer.</string>
+
+    <!-- Conexión con el servidor -->
+    <string name="red_sincronizando">Sincronizando con el servidor…</string>
+    <string name="red_reintentar">Reintentar</string>
+    <string name="red_sin_conexion">Sin conexión con el servidor. Se usan los datos guardados en el dispositivo.</string>
+    <string name="red_tiempo_agotado">El servidor tardó demasiado en responder.</string>
+    <string name="red_servidor_no_disponible">El servicio no está disponible por ahora.</string>
+    <string name="red_conflicto">El servidor rechazó el cambio: el dato ya existe.</string>
+    <string name="red_no_encontrado">El servidor no encontró ese registro.</string>
+    <string name="red_error_generico">No se pudo completar la operación con el servidor.</string>
 </resources>

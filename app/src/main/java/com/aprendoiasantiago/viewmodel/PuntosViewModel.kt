@@ -2,6 +2,7 @@ package com.aprendoiasantiago.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aprendoiasantiago.data.remote.EstadoRed
 import com.aprendoiasantiago.model.PuntoInteres
 import com.aprendoiasantiago.repository.PuntoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,14 +29,26 @@ class PuntosViewModel(
         initialValue = PuntosUiState()
     )
 
+    // NUEVO: estado de la conexión con el backend (cargando, error o ok) para avisar en pantalla
+    val estadoRed: StateFlow<EstadoRed> = repositorio.estadoRed
+
     init {
         // importante este es el unico lugar donde se siembran los datos inciiales
         // puntos, perfil y ranking. No repetir en otro ViewModel
         // porque el ranking seria duplicado
-        viewModelScope.launch { repositorio.sembrarDatosIniciales() }
+        viewModelScope.launch {
+            repositorio.sembrarDatosIniciales()
+            // NUEVO: luego se sincroniza con el servidor; si no hay conexión queda lo local
+            repositorio.sincronizar()
+        }
     }
 
-   fun cambiarFiltro(nuevoFiltro: FiltroPuntos) {
+    // NUEVO: lo usa el botón "Reintentar" del banner
+    fun reintentarSincronizacion() {
+        viewModelScope.launch { repositorio.sincronizar() }
+    }
+
+    fun cambiarFiltro(nuevoFiltro: FiltroPuntos) {
         filtro.value = nuevoFiltro
     }
 

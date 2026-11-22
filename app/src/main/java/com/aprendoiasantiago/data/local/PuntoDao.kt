@@ -22,6 +22,10 @@ interface PuntoDao {
     @Query("SELECT COUNT(*) FROM puntos")
     suspend fun contar(): Int
 
+    // Puntos que el jugador ya visitó: se envían al servidor al sincronizar.
+    @Query("SELECT * FROM puntos WHERE fueVisitado = 1")
+    suspend fun visitados(): List<PuntoEntity>
+
     @Query("SELECT COALESCE(MAX(id), 0) FROM puntos")
     suspend fun maxId(): Int
 

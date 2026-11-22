@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.core.content.ContextCompat
 import com.aprendoiasantiago.data.local.AppDatabase
 import com.aprendoiasantiago.data.local.UserPreferencesRepository
+import com.aprendoiasantiago.data.remote.ApiClient
 import com.aprendoiasantiago.navigation.AppNavigation
 import com.aprendoiasantiago.repository.PuntoRepository
 import com.aprendoiasantiago.service.UbicacionService
@@ -35,7 +36,10 @@ class MainActivity : ComponentActivity() {
             baseDeDatos.puntoDao(),
             baseDeDatos.perfilDao(),
             baseDeDatos.rankingDao(),
-            baseDeDatos.sesionDao()
+            baseDeDatos.sesionDao(),
+            // NUEVO: APIs de los microservicios (Retrofit)
+            ApiClient.puntoApi,
+            ApiClient.jugadorApi
         )
     }
 

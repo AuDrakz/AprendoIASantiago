@@ -9,6 +9,16 @@ import com.aprendoiasantiago.data.local.SesionDao
 import com.aprendoiasantiago.data.local.SesionEntity
 import com.aprendoiasantiago.data.local.toEntity
 import com.aprendoiasantiago.data.local.toModel
+// NUEVO: clases de la conexión con el backend
+import com.aprendoiasantiago.data.remote.EstadoRed
+import com.aprendoiasantiago.data.remote.JugadorApi
+import com.aprendoiasantiago.data.remote.JugadorDto
+import com.aprendoiasantiago.data.remote.PuntoApi
+import com.aprendoiasantiago.data.remote.VisitaRequestDto
+import com.aprendoiasantiago.data.remote.aDto
+import com.aprendoiasantiago.data.remote.aEntity
+import com.aprendoiasantiago.data.remote.aJugadorDto
+import com.aprendoiasantiago.data.remote.aTipoErrorRed
 import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.model.PuntoInteres
@@ -16,13 +26,21 @@ import com.aprendoiasantiago.model.ResultadoEscaneo
 import com.aprendoiasantiago.model.Rol
 import com.aprendoiasantiago.util.ArchivosFoto
 import com.aprendoiasantiago.util.Seguridad
+// NUEVO: corrutinas para el estado y el candado de sincronización
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import retrofit2.HttpException
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -33,8 +51,98 @@ class PuntoRepository(
     private val puntoDao: PuntoDao,
     private val perfilDao: PerfilDao,
     private val rankingDao: RankingDao,
-    private val sesionDao: SesionDao
+    private val sesionDao: SesionDao,
+    // NUEVO: las APIs de los microservicios
+    private val puntoApi: PuntoApi,
+    private val jugadorApi: JugadorApi
 ) {
+
+    // ===================== NUEVO: conexión con los microservicios =====================
+    // Room funciona como caché local; el servidor es la fuente de verdad cuando hay conexión.
+
+    private val _estadoRed = MutableStateFlow<EstadoRed>(EstadoRed.Inactivo)
+
+    /** Resultado de la última operación contra el servidor (la UI muestra carga o error). */
+    val estadoRed: StateFlow<EstadoRed> = _estadoRed.asStateFlow()
+
+    // Evita que dos sincronizaciones se pisen entre sí
+    private val candadoSincronizacion = Mutex()
+
+    /**
+     * Sincroniza con el servidor: baja el catálogo de puntos, sube las visitas del
+     * jugador con sesión y baja el ranking. Si falla, la app sigue con lo que hay en Room.
+     */
+    suspend fun sincronizar() {
+        candadoSincronizacion.withLock {
+            _estadoRed.value = EstadoRed.Cargando
+            _estadoRed.value = try {
+                sincronizarPuntos()
+                sincronizarJugadorActivo()
+                sincronizarRanking()
+                EstadoRed.Exito
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                EstadoRed.Error(e.aTipoErrorRed())
+            }
+        }
+    }
+
+    /** Baja los puntos del servidor y conserva lo que solo existe en el dispositivo (visita, selfie). */
+    internal suspend fun sincronizarPuntos() {
+        val entidades = puntoApi.listar().mapNotNull { dto ->
+            val idLocal = dto.id?.toInt()
+            dto.aEntity(if (idLocal == null) null else puntoDao.buscarPorId(idLocal))
+        }
+        if (entidades.isNotEmpty()) puntoDao.insertarTodos(entidades)
+    }
+
+    /** Reemplaza el ranking de Room por el que llegó del servidor. */
+    internal suspend fun sincronizarRanking() {
+        rankingDao.reemplazar(jugadorApi.ranking().map { it.aEntity() })
+    }
+
+    /** Asegura que el jugador con sesión exista en el servidor y le envía sus visitas. */
+    private suspend fun sincronizarJugadorActivo() {
+        val jugadorId = sesionDao.sesionActual() ?: return
+        val perfil = perfilDao.buscarPorId(jugadorId) ?: return
+
+        val remotoId = (buscarJugadorRemoto(perfil.email) ?: jugadorApi.crear(perfil.aJugadorDto())).id
+            ?: return
+
+        for (punto in puntoDao.visitados()) {
+            try {
+                jugadorApi.registrarVisita(remotoId, VisitaRequestDto(punto.id.toLong()))
+            } catch (e: HttpException) {
+                // 409 = el servidor ya la tenía. 404 = punto que solo existe en este dispositivo.
+                if (e.code() != 409 && e.code() != 404) throw e
+            }
+        }
+    }
+
+    private suspend fun buscarJugadorRemoto(email: String): JugadorDto? =
+        jugadorApi.listar().firstOrNull { it.email.equals(email, ignoreCase = true) }
+
+    /** Escritura "mejor esfuerzo": si falla, avisa por estadoRed y no rompe la acción local. */
+    private suspend fun intentarRemoto(bloque: suspend () -> Unit) {
+        try {
+            bloque()
+            _estadoRed.value = EstadoRed.Exito
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _estadoRed.value = EstadoRed.Error(e.aTipoErrorRed())
+        }
+    }
+
+    private suspend fun actualizarJugadorRemoto(emailAnterior: String, nuevo: PerfilEntity) {
+        intentarRemoto {
+            val id = buscarJugadorRemoto(emailAnterior)?.id ?: return@intentarRemoto
+            jugadorApi.actualizar(id, nuevo.aJugadorDto())
+        }
+    }
+
+    // ===================== fin de lo nuevo =====================
 
     val puntos: Flow<List<PuntoInteres>> =
         puntoDao.observarPuntos().map { lista ->
@@ -190,18 +298,35 @@ class PuntoRepository(
     /**
      * Crea (id = 0) o actualiza un punto.
      * Devuelve false si el código QR ya lo usa otro punto.
+     * CAMBIO: al crear, el servidor asigna el id; al editar, se actualiza también en el servidor.
      */
     suspend fun guardarPunto(punto: PuntoInteres): Boolean {
         val qr = punto.codigoQR.trim()
         val existente = puntoDao.buscarPorQr(qr)
         if (existente != null && existente.id != punto.id) return false
 
+        val aGuardar = punto.copy(codigoQR = qr)
+
         if (punto.id == 0) {
+            // Sin conexión se guarda solo en el dispositivo
+            var idRemoto: Int? = null
+            try {
+                idRemoto = puntoApi.crear(aGuardar.aDto()).id?.toInt()
+                _estadoRed.value = EstadoRed.Exito
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: HttpException) {
+                if (e.code() == 409) return false // el QR ya existe en el servidor
+                _estadoRed.value = EstadoRed.Error(e.aTipoErrorRed())
+            } catch (e: Exception) {
+                _estadoRed.value = EstadoRed.Error(e.aTipoErrorRed())
+            }
             puntoDao.insertar(
-                punto.copy(id = puntoDao.maxId() + 1, codigoQR = qr).toEntity()
+                aGuardar.copy(id = idRemoto ?: (puntoDao.maxId() + 1)).toEntity()
             )
         } else {
-            puntoDao.actualizar(punto.copy(codigoQR = qr).toEntity())
+            puntoDao.actualizar(aGuardar.toEntity())
+            intentarRemoto { puntoApi.actualizar(punto.id.toLong(), aGuardar.aDto()) }
         }
         return true
     }
@@ -210,6 +335,8 @@ class PuntoRepository(
         val selfie = puntoDao.selfieActual(id)
         puntoDao.eliminar(id)
         ArchivosFoto.borrar(selfie)
+        // NUEVO: también se borra en el servidor
+        intentarRemoto { puntoApi.eliminar(id.toLong()) }
     }
 
     /** Solo se pueden eliminar Clientes; las cuentas en duro quedan protegidas. */
@@ -219,6 +346,11 @@ class PuntoRepository(
 
         perfilDao.eliminar(id)
         ArchivosFoto.borrar(jugador.fotoRuta)
+        // NUEVO: también se borra en el servidor (se busca por correo)
+        intentarRemoto {
+            val remotoId = buscarJugadorRemoto(jugador.email)?.id ?: return@intentarRemoto
+            jugadorApi.eliminar(remotoId)
+        }
     }
 
     /** Edita nombre y correo de un Cliente. Devuelve false si el correo ya lo usa otro. */
@@ -231,12 +363,13 @@ class PuntoRepository(
         if (actual.rol != Rol.CLIENTE) return false
         if (perfilDao.contarPorEmail(email.trim(), id) > 0) return false
 
-        perfilDao.actualizar(
-            actual.copy(
-                nombreUsuario = nombreUsuario.trim(),
-                email = email.trim()
-            )
+        // CAMBIO: se guarda en una variable para enviarla también al servidor
+        val nuevo = actual.copy(
+            nombreUsuario = nombreUsuario.trim(),
+            email = email.trim()
         )
+        perfilDao.actualizar(nuevo)
+        actualizarJugadorRemoto(emailAnterior = actual.email, nuevo = nuevo)
         return true
     }
 
@@ -251,17 +384,18 @@ class PuntoRepository(
 
         if (perfilDao.contarPorEmail(email.trim(), jugadorId) > 0) return false
 
-        perfilDao.actualizar(
-            actual.copy(
-                nombreUsuario = nombreUsuario.trim(),
-                email = email.trim(),
-                fotoRuta = fotoRuta
-            )
+        // CAMBIO: se guarda en una variable para enviarla también al servidor
+        val nuevo = actual.copy(
+            nombreUsuario = nombreUsuario.trim(),
+            email = email.trim(),
+            fotoRuta = fotoRuta
         )
+        perfilDao.actualizar(nuevo)
 
         if (actual.fotoRuta != fotoRuta) {
             ArchivosFoto.borrar(actual.fotoRuta)
         }
+        actualizarJugadorRemoto(emailAnterior = actual.email, nuevo = nuevo)
         return true
     }
 
