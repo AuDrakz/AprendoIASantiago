@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    jacoco
 }
 
 android {
@@ -21,10 +22,18 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             optimization {
                 enable = false
             }
+        }
+    }
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
         }
     }
     compileOptions {
@@ -64,6 +73,8 @@ dependencies {
     implementation(libs.mlkit.barcode.scanning)
     implementation("com.google.mlkit:face-detection:16.1.7")
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -80,6 +91,35 @@ dependencies {
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("androidx.media3:media3-exoplayer:1.11.1")
     implementation("androidx.media3:media3-ui:1.11.1")
+}
 
+jacoco {
+    toolVersion = "0.8.13"
+}
 
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    val excluidos = listOf(
+        "**/R.class", "**/R\$*.class", "**/BuildConfig.*", "**/Manifest*.*",
+        "**/ui/**", "**/navigation/**", "**/service/**", "**/MainActivity*",
+        "**/util/ArchivosFoto*", "**/data/local/AppDatabase*",
+        "**/data/local/UserPreferencesRepository*", "**/*_Impl*"
+    )
+    classDirectories.setFrom(
+        files(
+            fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")) {
+                exclude(excluidos)
+            }
+        )
+    )
+    sourceDirectories.setFrom(files("src/main/java"))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include("outputs/unit_test_code_coverage/debugUnitTest/*.exec")
+        }
+    )
 }

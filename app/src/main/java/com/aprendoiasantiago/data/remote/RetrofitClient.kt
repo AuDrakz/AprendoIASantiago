@@ -10,6 +10,7 @@ object RetrofitClient {
     private const val URL_PUNTOS = "http://localhost:8081/"
     private const val URL_JUGADORES = "http://localhost:8082/"
 
+    private const val URL_PHOTON = "https://photon.komoot.io/"
     private val clienteHttp by lazy {
         OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -25,4 +26,7 @@ object RetrofitClient {
         .build()
 
     val puntoApi: PuntoApi by lazy { crear(URL_PUNTOS).create(PuntoApi::class.java) }
-    val jugadorApi: JugadorApi by lazy { crear(URL_JUGADORES).create(JugadorApi::class.java) }}
+    val jugadorApi: JugadorApi by lazy { crear(URL_JUGADORES).create(JugadorApi::class.java) }
+    val photonService: RetrofitService by lazy { crear(URL_PHOTON).create(RetrofitService::class.java) }
+}
+

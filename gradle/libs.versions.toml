@@ -18,6 +18,8 @@ osmdroid = "6.1.20"
 coil = "3.3.0"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
+mockk = "1.14.2"
+coroutinesTest = "1.10.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -52,6 +54,9 @@ coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref 
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
