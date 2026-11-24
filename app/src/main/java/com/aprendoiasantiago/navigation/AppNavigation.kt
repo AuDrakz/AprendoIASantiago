@@ -114,11 +114,25 @@ private val itemsAdministrador = listOf(
 )
 
 /** Creador de contenido: gestiona las cápsulas de video. */
+/**
+ * Creador de contenido: gestiona las cápsulas de video y además juega como
+ * cualquier cliente (lista de puntos con totales/visitados/pendientes y escáner QR).
+ */
 private val itemsGenerador = listOf(
     ItemBarra(
         Screen.GestionPuntos,
         R.string.nav_gestion_capsulas,
         Icons.Filled.Edit
+    ),
+    ItemBarra(
+        Screen.ListaPuntos,
+        R.string.nav_puntos,
+        Icons.AutoMirrored.Filled.List
+    ),
+    ItemBarra(
+        Screen.ScannerQR,
+        R.string.nav_escaner,
+        IconoQr
     ),
     ItemBarra(
         Screen.Mapa,

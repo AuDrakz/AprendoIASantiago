@@ -35,7 +35,8 @@ class MainActivity : ComponentActivity() {
             baseDeDatos.puntoDao(),
             baseDeDatos.perfilDao(),
             baseDeDatos.rankingDao(),
-            baseDeDatos.sesionDao()
+            baseDeDatos.sesionDao(),
+            baseDeDatos.visitaDao()
         )
     }
 

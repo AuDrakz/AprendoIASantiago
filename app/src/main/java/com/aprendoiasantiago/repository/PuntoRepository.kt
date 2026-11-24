@@ -7,8 +7,17 @@ import com.aprendoiasantiago.data.local.RankingDao
 import com.aprendoiasantiago.data.local.RankingEntity
 import com.aprendoiasantiago.data.local.SesionDao
 import com.aprendoiasantiago.data.local.SesionEntity
+import com.aprendoiasantiago.data.local.VisitaDao
+import com.aprendoiasantiago.data.local.VisitaEntity
 import com.aprendoiasantiago.data.local.toEntity
 import com.aprendoiasantiago.data.local.toModel
+import com.aprendoiasantiago.data.remote.JugadorApi
+import com.aprendoiasantiago.data.remote.JugadorDto
+import com.aprendoiasantiago.data.remote.PuntoApi
+import com.aprendoiasantiago.data.remote.RetrofitClient
+import com.aprendoiasantiago.data.remote.VisitaRequestDto
+import com.aprendoiasantiago.data.remote.aDto
+import com.aprendoiasantiago.data.remote.aModelo
 import com.aprendoiasantiago.model.EntradaRanking
 import com.aprendoiasantiago.model.PerfilUsuario
 import com.aprendoiasantiago.model.PuntoInteres
@@ -20,36 +29,44 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import retrofit2.HttpException
+import java.io.IOException
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-import com.aprendoiasantiago.data.remote.JugadorApi
-import com.aprendoiasantiago.data.remote.PuntoApi
-import com.aprendoiasantiago.data.remote.RetrofitClient
-import com.aprendoiasantiago.data.remote.aDto
-import com.aprendoiasantiago.data.remote.aModelo
-import kotlinx.coroutines.flow.first
-import retrofit2.HttpException
-import com.aprendoiasantiago.data.remote.JugadorDto
-import com.aprendoiasantiago.data.remote.VisitaRequestDto
-import java.io.IOException
 
 class PuntoRepository(
     private val puntoDao: PuntoDao,
     private val perfilDao: PerfilDao,
     private val rankingDao: RankingDao,
     private val sesionDao: SesionDao,
+    private val visitaDao: VisitaDao,
     private val puntoApi: PuntoApi = RetrofitClient.puntoApi,
     private val jugadorApi: JugadorApi = RetrofitClient.jugadorApi
 ) {
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     val puntos: Flow<List<PuntoInteres>> =
-        puntoDao.observarPuntos().map { lista ->
-            lista.map { it.toModel() }
+        sesionDao.observarSesion().flatMapLatest { jugadorId ->
+            val visitas = if (jugadorId == null) flowOf(emptyList())
+            else visitaDao.observarVisitas(jugadorId)
+            combine(puntoDao.observarPuntos(), visitas) { lista, listaVisitas ->
+                val porPunto = listaVisitas.associateBy { it.puntoId }
+                lista.map { entidad ->
+                    val v = porPunto[entidad.id]
+                    entidad.toModel().copy(
+                        fueVisitado = v != null,
+                        selfieRuta = v?.selfieRuta,
+                        fechaVisita = v?.fecha,
+                        altitudVisita = v?.altitud
+                    )
+                }
+            }
         }
 
     val rankingBase: Flow<List<EntradaRanking>> =
@@ -65,7 +82,7 @@ class PuntoRepository(
         } else {
             combine(
                 perfilDao.observarPerfil(jugadorId).filterNotNull(),
-                puntoDao.observarPuntos()
+                puntos
             ) { perfilGuardado, listaPuntos ->
                 val visitados = listaPuntos.filter { it.fueVisitado }
 
@@ -149,6 +166,7 @@ class PuntoRepository(
             )
         }
     }
+
     /** Crea un Cliente en ms-jugadores y en Room (con el mismo id) y abre su sesión. */
     suspend fun registrarJugador(
         nombre: String,
@@ -245,16 +263,16 @@ class PuntoRepository(
     }
 
     suspend fun eliminarPunto(id: Int) {
-        val selfie = puntoDao.selfieActual(id)
+        val selfies = visitaDao.selfiesDePunto(id)
         try {
             puntoApi.eliminar(id.toLong())
         } catch (e: HttpException) {
             if (e.code() != 404) throw e
         }
         puntoDao.eliminar(id)
-        ArchivosFoto.borrar(selfie)
+        visitaDao.eliminarPorPunto(id)
+        selfies.forEach { ArchivosFoto.borrar(it) }
     }
-
     /** Baja los puntos de ms-puntos y los guarda en Room sin perder visitas ni selfies. */
     suspend fun sincronizarPuntos() {
         val remotos = puntoApi.listar().map { it.aModelo() }
@@ -292,7 +310,10 @@ class PuntoRepository(
         } catch (e: HttpException) {
             if (e.code() != 404) throw e
         }
+        val selfies = visitaDao.selfiesDeJugador(id)
         perfilDao.eliminar(id)
+        visitaDao.eliminarPorJugador(id)
+        selfies.forEach { ArchivosFoto.borrar(it) }
         ArchivosFoto.borrar(jugador.fotoRuta)
     }
 
@@ -372,7 +393,9 @@ class PuntoRepository(
         puntoId: Int,
         ruta: String
     ) {
-        val anterior = puntoDao.selfieActual(puntoId)
+        val jugadorId = sesionDao.sesionActual() ?: return
+        val anterior = visitaDao.selfieActual(jugadorId, puntoId)
+        visitaDao.guardarSelfie(jugadorId, puntoId, ruta)
 
         puntoDao.guardarSelfie(puntoId, ruta)
 
@@ -390,6 +413,8 @@ class PuntoRepository(
 
         val entidad = puntoDao.buscarPorQr(codigoQR)
             ?: return ResultadoEscaneo.Invalido
+
+        val jugadorId = sesionDao.sesionActual() ?: return ResultadoEscaneo.Invalido
 
         if (
             latitudUsuario == null ||
@@ -418,8 +443,8 @@ class PuntoRepository(
             )
         }
 
-        if (entidad.fueVisitado) {
-            return ResultadoEscaneo.YaVisitado(punto)
+        if (visitaDao.buscar(jugadorId, entidad.id) != null) {
+            return ResultadoEscaneo.YaVisitado(punto.copy(fueVisitado = true))
         }
 
         val altitudValida = altitudUsuario?.takeIf {
@@ -428,11 +453,11 @@ class PuntoRepository(
 
         val fechaVisita = java.time.Instant.now().toString()
 
-        val filasActualizadas = puntoDao.marcarVisitado(
-            id = entidad.id,
-            fecha = fechaVisita,
-            altitud = altitudValida
-        )
+        val filasActualizadas = if (
+            visitaDao.insertarSiNoExiste(
+                VisitaEntity(jugadorId, entidad.id, fechaVisita, altitudValida)
+            ) != -1L
+        ) 1 else 0
 
         if (filasActualizadas > 0) enviarVisita(entidad.id)
         return if (filasActualizadas > 0) {
@@ -449,6 +474,7 @@ class PuntoRepository(
             )
         }
     }
+
     /** Visita + selfie. Devuelve el resultado y si se otorgó el bonus de selfie. */
     suspend fun registrarSelfie(
         codigoQR: String,
@@ -465,9 +491,9 @@ class PuntoRepository(
             else -> return resultado to false
         }
 
-        if (puntoDao.selfieActual(punto.id) != null) return resultado to false
-
-        puntoDao.guardarSelfie(punto.id, ruta)
+        val jugadorId = sesionDao.sesionActual() ?: return resultado to false
+        if (visitaDao.selfieActual(jugadorId, punto.id) != null) return resultado to false
+        visitaDao.guardarSelfie(jugadorId, punto.id, ruta)
         return resultado to true
     }
 
