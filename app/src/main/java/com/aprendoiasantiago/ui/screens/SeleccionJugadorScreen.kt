@@ -1,5 +1,6 @@
 package com.aprendoiasantiago.ui.screens
 
+import com.aprendoiasantiago.ui.components.AvisoRed
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

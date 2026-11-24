@@ -162,4 +162,11 @@
     <string name="acceso_error_campos">Completa ambos campos</string>
     <string name="error_nombre_duplicado">Ese nombre de usuario ya está en uso</string>
     <string name="gestion_creador_aviso">Solo puedes editar el tema y la URL del video.</string>
+    <string name="error_red_sin_conexion">Sin conexión con el servidor. Revisa la conexión e inténtalo de nuevo</string>
+    <string name="error_red_timeout">El servidor tardó demasiado en responder</string>
+    <string name="error_red_conflicto">Ese dato ya existe en el servidor</string>
+    <string name="error_red_no_disponible">Servicio no disponible por ahora. Intenta más tarde</string>
+    <string name="error_red_datos_invalidos">El servidor rechazó los datos enviados</string>
+    <string name="error_red_no_encontrado">No se encontró el registro en el servidor</string>
+    <string name="error_red_desconocido">Ocurrió un error inesperado</string>
 </resources>

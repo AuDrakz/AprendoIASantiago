@@ -39,6 +39,7 @@ class SesionViewModel(
     private val _registro = MutableStateFlow(RegistroUiState())
     val registro: StateFlow<RegistroUiState> = _registro.asStateFlow()
 
+    val red = EstadoRed()
     /** Si la contraseña es correcta abre la sesión; la navegación reacciona sola. */
     fun iniciarSesion(jugadorId: Int, contrasena: String, onResultado: (Boolean) -> Unit) {
         viewModelScope.launch {
@@ -64,11 +65,7 @@ class SesionViewModel(
 
     fun eliminarJugador(id: Int) {
         viewModelScope.launch {
-            try {
-                repositorio.eliminarJugador(id)
-            } catch (e: Exception) {
-                Log.e("SesionVM", "Error al eliminar jugador", e)
-            }
+            red.ejecutar("eliminar jugador") { repositorio.eliminarJugador(id) }
         }
     }
 
@@ -80,12 +77,9 @@ class SesionViewModel(
         onResultado: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
-            val ok = try {
+            val ok = red.ejecutar("actualizar jugador") {
                 repositorio.actualizarJugador(id, nombre, email)
-            } catch (e: Exception) {
-                Log.e("SesionVM", "Error al actualizar jugador", e)
-                false
-            }
+            } ?: return@launch
             onResultado(ok)
         }
     }
@@ -140,15 +134,15 @@ class SesionViewModel(
         _registro.update { it.copy(guardando = true) }
 
         viewModelScope.launch {
-            val resultado = try {
+            val resultado = red.ejecutar("registrar jugador") {
                 repositorio.registrarJugador(
                     nombre = f.nombre,
                     email = f.email,
                     avatar = f.avatar,
                     contrasena = f.contrasena
                 )
-            } catch (e: Exception) {
-                Log.e("SesionVM", "Error al registrar", e)
+            }
+            if (resultado == null) {
                 _registro.update { it.copy(guardando = false) }
                 return@launch
             }

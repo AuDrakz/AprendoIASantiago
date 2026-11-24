@@ -1,5 +1,6 @@
 package com.aprendoiasantiago.ui.screens
 
+import com.aprendoiasantiago.ui.components.AvisoRed
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

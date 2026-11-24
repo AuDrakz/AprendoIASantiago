@@ -1,5 +1,6 @@
 package com.aprendoiasantiago.ui.screens
 
+import com.aprendoiasantiago.ui.components.AvisoRed
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +53,7 @@ fun ListaPuntosScreen(
     onVerDetalle: (Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    AvisoRed(viewModel.red)
 
     ListaPuntosContent(
         puntos = uiState.puntosFiltrados,

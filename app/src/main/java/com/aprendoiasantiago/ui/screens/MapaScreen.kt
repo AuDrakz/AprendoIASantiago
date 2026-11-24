@@ -1,5 +1,6 @@
 package com.aprendoiasantiago.ui.screens
 
+import com.aprendoiasantiago.ui.components.AvisoRed
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager

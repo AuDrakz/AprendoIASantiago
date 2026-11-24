@@ -34,6 +34,7 @@ class PerfilViewModel(
     private val _formulario = MutableStateFlow(FormularioUiState())
     val formulario: StateFlow<FormularioUiState> = _formulario.asStateFlow()
 
+    val red = EstadoRed()
     // Vive en memoria del ViewModel: sobrevive a rotaciones y se reinicia si Android cierra el proceso
     private var formularioCargado = false
 
@@ -82,12 +83,9 @@ class PerfilViewModel(
         if (!validarFormulario()) return
         val f = _formulario.value
         viewModelScope.launch {
-            val guardado = try {
+            val guardado = red.ejecutar("guardar perfil") {
                 repositorio.actualizarPerfil(f.nombre, f.email, f.fotoRuta)
-            } catch (e: Exception) {
-                Log.e("PerfilVM", "Error al guardar perfil", e)
-                false
-            }
+            } ?: return@launch
             if (guardado) {
                 onGuardado()
             } else {

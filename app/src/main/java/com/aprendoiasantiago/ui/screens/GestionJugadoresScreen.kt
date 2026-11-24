@@ -1,5 +1,6 @@
 package com.aprendoiasantiago.ui.screens
 
+import com.aprendoiasantiago.ui.components.AvisoRed
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +53,7 @@ import com.aprendoiasantiago.viewmodel.SesionViewModel
 @Composable
 fun GestionJugadoresScreen(viewModel: SesionViewModel) {
     val jugadores by viewModel.jugadores.collectAsStateWithLifecycle()
+    AvisoRed(viewModel.red)
     val clientes = jugadores.filter { it.rol == Rol.CLIENTE }
 
     var editando by remember { mutableStateOf<PerfilUsuario?>(null) }

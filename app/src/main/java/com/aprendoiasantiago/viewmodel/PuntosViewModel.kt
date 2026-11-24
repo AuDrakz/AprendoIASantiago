@@ -19,6 +19,7 @@ class PuntosViewModel(
     // unico que vive solo en memoria: el filtro elegido en pantalla
     private val filtro = MutableStateFlow(FiltroPuntos.TODOS)
 
+    val red = EstadoRed()
     val uiState: StateFlow<PuntosUiState> = combine(
         repositorio.puntos,
         filtro
@@ -33,10 +34,9 @@ class PuntosViewModel(
     init {
         viewModelScope.launch {
             repositorio.sembrarDatosIniciales()
-            try {
+            red.ejecutar("sincronizar", mostrarCarga = false) {
                 repositorio.sincronizarPuntos()
                 repositorio.sincronizarRanking()
-            } catch (_: Exception) {
             }
         }
     }
@@ -50,28 +50,19 @@ class PuntosViewModel(
     }
 
     // --- Gestión de puntos y cápsulas (Administrador / Creador de Contenido) ---
-
-    /** Crea (id = 0) o actualiza un punto. onResultado(false) = no se pudo guardar. */
+    /** Crea (id = 0) o actualiza un punto. onResultado(false) = código QR repetido. */
     fun guardarPunto(punto: PuntoInteres, onResultado: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val ok = try {
+            val ok = red.ejecutar("guardar punto") {
                 repositorio.guardarPunto(punto)
-            } catch (e: Exception) {
-                val detalle = (e as? HttpException)?.response()?.errorBody()?.string()
-                Log.e("PuntosVM", "Error al guardar punto: $detalle | url=[${punto.urlVideo}]", e)
-                false
-            }
+            } ?: return@launch
             onResultado(ok)
         }
     }
 
     fun eliminarPunto(id: Int) {
         viewModelScope.launch {
-            try {
-                repositorio.eliminarPunto(id)
-            } catch (e: Exception) {
-                Log.e("PuntosVM", "Error al eliminar punto", e)
-            }
+            red.ejecutar("eliminar punto") { repositorio.eliminarPunto(id) }
         }
     }
 }

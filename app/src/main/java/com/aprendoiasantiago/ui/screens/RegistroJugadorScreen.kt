@@ -1,5 +1,6 @@
 package com.aprendoiasantiago.ui.screens
 
+import com.aprendoiasantiago.ui.components.AvisoRed
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -72,6 +73,7 @@ fun RegistroJugadorScreen(
     onVolver: () -> Unit
 ) {
     val registro by viewModel.registro.collectAsStateWithLifecycle()
+    AvisoRed(viewModel.red)
     val colores = MaterialTheme.colorScheme
     // Los acentos salen del tema, así responden al modo daltonismo
     val gradienteNeon = Brush.linearGradient(listOf(colores.primary, colores.secondary))

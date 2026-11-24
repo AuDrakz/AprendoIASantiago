@@ -1,5 +1,6 @@
 package com.aprendoiasantiago.ui.screens
 
+import com.aprendoiasantiago.ui.components.AvisoRed
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,6 +73,7 @@ fun GestionPuntosScreen(
     viewModel: PuntosViewModel
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    AvisoRed(viewModel.red)
 
     var creando by remember { mutableStateOf(false) }
     var editando by remember { mutableStateOf<PuntoInteres?>(null) }

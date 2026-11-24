@@ -1,5 +1,6 @@
 package com.aprendoiasantiago.ui.screens
 
+import com.aprendoiasantiago.ui.components.AvisoRed
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -29,6 +30,7 @@ fun EditarPerfilScreen(
 ) {
     val estado by viewModel.formulario.collectAsStateWithLifecycle()
     val perfil = viewModel.uiState.collectAsStateWithLifecycle().value.perfil
+    AvisoRed(viewModel.red)
 
     // Precarga cuando Room entrega el perfil (el ViewModel ignora llamadas repetidas)
     LaunchedEffect(perfil.id) { viewModel.cargarFormulario(perfil) }
