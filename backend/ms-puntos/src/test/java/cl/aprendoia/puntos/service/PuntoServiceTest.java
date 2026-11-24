@@ -129,4 +129,16 @@ class PuntoServiceTest {
         assertThrows(RecursoNoEncontradoException.class, () -> servicio.eliminar(99L));
         verify(repositorio, never()).delete(any());
     }
+    @Test
+    void actualizar_noValidaQrRepetidoSiElQrNoCambia() {
+        Punto actual = punto("QR_1");
+        when(repositorio.findById(1L)).thenReturn(Optional.of(actual));
+        when(repositorio.save(any(Punto.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Punto cambios = new Punto("Nuevo título", "NLP", -33.43, -70.65, "QR_1", 20, "https://aprendoia.cl/v.mp4");
+        Punto resultado = servicio.actualizar(1L, cambios);
+
+        assertEquals("Nuevo título", resultado.getTitulo());
+        verify(repositorio, never()).existsByCodigoQR(any());
+    }
 }

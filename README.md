@@ -15,87 +15,48 @@ artificial y suman puntos en un ranking.
 ## Tecnologías
 - Kotlin y Jetpack Compose (Material 3)
 - Arquitectura MVVM con repositorio
-- Room (SQLite) para persistencia local
+- Room (SQLite) como persistencia y caché local
+- Retrofit + OkHttp para consumir la API externa y los microservicios
+- Microservicios en Spring Boot (Java 17, Maven, Spring Data JPA, H2)
 - Navigation Compose con diseño adaptable (barra inferior / riel lateral)
 - CameraX + ML Kit para escanear códigos QR
 - osmdroid para el mapa
 - Coil para mostrar las fotos de perfil y de validación
+- JUnit, MockK y coroutines-test para las pruebas; JaCoCo para la cobertura
 
 ## Estructura del proyecto
 ```
-app/src/main/java/com/aprendoiasantiago/
-├── data/local/     Entidades, DAOs y base de datos Room
-├── model/          Modelos de dominio
-├── repository/     Repositorio (fuente única de datos)
-├── viewmodel/      ViewModels y estados de la UI
-├── navigation/     Rutas y navegación
-└── ui/             Pantallas, componentes y tema
+AprendoIASantiago/
+├── app/src/main/java/com/aprendoiasantiago/
+│   ├── data/local/     Entidades, DAOs y base de datos Room
+│   ├── data/remote/    Retrofit: API externa, microservicios, DTOs y mappers
+│   ├── model/          Modelos de dominio
+│   ├── repository/     Repositorio (fuente única de datos)
+│   ├── viewmodel/      ViewModels y estados de la UI
+│   ├── navigation/     Rutas y navegación
+│   ├── service/        Servicio de ubicación GPS
+│   ├── util/           Utilidades (validaciones, seguridad, errores de red)
+│   └── ui/             Pantallas, componentes y tema
+├── app/src/test/       Pruebas unitarias de la app
+├── backend/
+│   ├── ms-puntos/      Microservicio de puntos de interés (puerto 8081)
+│   └── ms-jugadores/   Microservicio de jugadores, visitas y ranking (puerto 8082)
+├── release/            APK firmado
+└── docs/capturas/      Capturas de la documentación
 ```
 
 ## Arquitectura
-El flujo de datos es: Room → DAO → Repositorio → ViewModel → estado de UI → pantalla.
-Las pantallas no hablan con la base de datos, solo observan el estado del ViewModel.
+El flujo de datos de la app es:
+Room / Microservicios → Repositorio → ViewModel → estado de UI → pantalla.
+Las pantallas no hablan con la red ni con la base de datos, solo observan el
+estado del ViewModel. Room funciona como caché local y los microservicios son
+la fuente de datos compartida.
 
 | ViewModel | Pantallas | Responsabilidad |
 |---|---|---|
-| `PuntosViewModel` | Lista, mapa y detalle | Puntos y filtro. Es el único que siembra los datos iniciales. |
+| `PuntosViewModel` | Lista, mapa, detalle y gestión de puntos | Puntos, filtro y CRUD de puntos. Es el único que siembra y sincroniza los datos iniciales. |
 | `PerfilViewModel` | Perfil, edición y ranking | Perfil del usuario y ranking. |
 | `EscanerViewModel` | Escáner QR | Validación del QR y registro de visitas. |
+| `SesionViewModel` | Acceso, registro y gestión de jugadores | Sesión, registro y CRUD de jugadores. |
 
-Los tres se crean una sola vez en `MainActivity` con `AprendoIaViewModelFactory`
-y se pasan por parámetro a la navegación.
-
-## Base de datos
-Room (SQLite) con tres tablas: `puntos`, `perfil` y `ranking` (datos ficticios).
-El registro de una visita es atómico: solo se suman puntos si el punto
-todavía no estaba visitado, aunque se escanee dos veces seguidas.
-
-Durante el desarrollo, si se cambia una entidad hay que subir `version` en
-`AppDatabase`. La base se recrea con `fallbackToDestructiveMigration`.
-
-## Requisitos para ejecutar
-- Android Studio reciente.
-- JDK 17 o superior (probado con JDK 21).
-- Android SDK instalado (se gestiona desde Tools > SDK Manager).
-- Emulador o teléfono con Android 8.0 (API 26) o superior. El escáner QR necesita cámara y permiso para usarla.
-
-En Android Studio, verificar que el JDK de Gradle sea 17 o 21:
-Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JDK
-(o "Gradle JVM criteria" > Version). Si está en una versión más nueva
-(por ejemplo 25), el build puede fallar.
-
-El archivo `local.properties` (ruta del SDK) no se sube al repositorio porque
-es específico de cada computador. Android Studio lo genera automáticamente al
-abrir el proyecto con File > Open.
-
-## Cómo ejecutarla
-1. Clonar el repositorio y abrirlo con Android Studio (File > Open).
-2. Verificar que el JDK de Gradle sea 17 o 21 (ver "Requisitos para ejecutar").
-3. Esperar la sincronización de Gradle.
-4. Ejecutar en un emulador o teléfono con Android 8.0 (API 26) o superior.
-   Para un teléfono físico, activar Opciones de desarrollador y Depuración USB.
-
-## Funcionalidades actuales
-- Lista de puntos de interés con filtros (todos, pendientes y visitados).
-- Mapa con la ubicación del usuario y los puntos marcados.
-- Escáner de códigos QR que valida el punto y suma los puntos de recompensa.
-- Registro de visitas con validación de QR repetido.
-- Detalle de cada punto con acceso a su video.
-- Perfil editable con validación de formulario.
-- Ranking de estudiantes (datos ficticios) guardado en la base de datos local.
-- Registro de usuario con rol: cliente, generador de contenido o administrador.
-- Formulario con validación en el ViewModel (nombre y correo).
-- Foto de perfil desde cámara o galería, guardada en Room y mostrada en el perfil.
-- Selfie de validación al visitar un punto, guardada junto al punto en Room.
-
-Probada en teléfono físico.
-
-## Convenciones del equipo
-- Una rama por funcionalidad (`feature/...`) y Pull Request hacia `master`.
-- Los textos de la interfaz van en `strings.xml`, no escritos en el código.
-- `.idea/` y las claves de firma (`*.jks`, `*.keystore`) no se suben al repositorio.
-
-## En desarrollo
-- Animaciones y tema de alto contraste.
-- Pruebas unitarias.
-- Control de acceso por rol (hoy el rol es informativo y se elige libremente) y sesión de usuario.
+Cada ViewModel expone un `EstadoRed` con el estado de carga y

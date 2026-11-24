@@ -21,11 +21,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("aprendoia-release.jks")
+            storePassword = "aprendoia123"
+            keyAlias = "aprendoia"
+            keyPassword = "aprendoia123"
+        }
+    }
+
     buildTypes {
         debug {
             enableUnitTestCoverage = true
         }
         release {
+            signingConfig = signingConfigs.getByName("release")
             optimization {
                 enable = false
             }
