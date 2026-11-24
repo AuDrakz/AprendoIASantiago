@@ -67,7 +67,7 @@ curl -X POST http://localhost:8082/api/jugadores/3/visitas -H "Content-Type: app
 ## Pruebas y cobertura
 | Microservicio | Tests | Cobertura (instrucciones) |
 |---|---|---|
-| `ms-puntos` | 23 (11 de servicio + 12 de controller) | 84,3 % |
+| `ms-puntos` | 24 (12 de servicio + 12 de controller) | 84,3 % |
 | `ms-jugadores` | 38 (16 de servicio + 18 de controller + 4 del cliente HTTP) | 86,5 % |
 
 - **Servicios:** JUnit 5 + Mockito; el repositorio se mockea, así que no necesitan base de datos.
