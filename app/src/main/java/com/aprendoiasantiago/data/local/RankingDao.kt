@@ -17,4 +17,7 @@ interface RankingDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarTodos(lista: List<RankingEntity>)
+
+    @Query("DELETE FROM ranking")
+    suspend fun borrarTodo()
 }

@@ -27,13 +27,24 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-
+import com.aprendoiasantiago.data.remote.JugadorApi
+import com.aprendoiasantiago.data.remote.PuntoApi
+import com.aprendoiasantiago.data.remote.RetrofitClient
+import com.aprendoiasantiago.data.remote.aDto
+import com.aprendoiasantiago.data.remote.aModelo
+import kotlinx.coroutines.flow.first
+import retrofit2.HttpException
+import com.aprendoiasantiago.data.remote.JugadorDto
+import com.aprendoiasantiago.data.remote.VisitaRequestDto
+import java.io.IOException
 
 class PuntoRepository(
     private val puntoDao: PuntoDao,
     private val perfilDao: PerfilDao,
     private val rankingDao: RankingDao,
-    private val sesionDao: SesionDao
+    private val sesionDao: SesionDao,
+    private val puntoApi: PuntoApi = RetrofitClient.puntoApi,
+    private val jugadorApi: JugadorApi = RetrofitClient.jugadorApi
 ) {
 
     val puntos: Flow<List<PuntoInteres>> =
@@ -138,8 +149,7 @@ class PuntoRepository(
             )
         }
     }
-
-    /** Crea un Cliente y abre su sesión. Avisa si el correo o el nombre ya existen. */
+    /** Crea un Cliente en ms-jugadores y en Room (con el mismo id) y abre su sesión. */
     suspend fun registrarJugador(
         nombre: String,
         email: String,
@@ -153,15 +163,37 @@ class PuntoRepository(
             return ResultadoRegistro.NOMBRE_DUPLICADO
         }
 
-        val id = perfilDao.insertar(
+        val creado = try {
+            jugadorApi.crear(
+                JugadorDto(
+                    nombreUsuario = nombre.trim(),
+                    email = email.trim(),
+                    rol = Rol.CLIENTE.name
+                )
+            )
+        } catch (e: HttpException) {
+            if (e.code() == 409) {
+                val mensaje = e.response()?.errorBody()?.string().orEmpty()
+                return if (mensaje.contains("correo", ignoreCase = true)) {
+                    ResultadoRegistro.CORREO_DUPLICADO
+                } else {
+                    ResultadoRegistro.NOMBRE_DUPLICADO
+                }
+            }
+            throw e
+        }
+
+        val id = (creado.id ?: 0L).toInt()
+        perfilDao.insertar(
             PerfilEntity(
+                id = id,
                 nombreUsuario = nombre.trim(),
                 email = email.trim(),
                 avatar = avatar,
                 contrasenaHash = Seguridad.hashear(contrasena)
             )
         )
-        sesionDao.guardarSesion(SesionEntity(jugadorId = id.toInt()))
+        sesionDao.guardarSesion(SesionEntity(jugadorId = id))
         return ResultadoRegistro.EXITO
     }
 
@@ -187,29 +219,67 @@ class PuntoRepository(
 
     // --- Gestión (Administrador y Creador de Contenido) ---
 
-    /**
-     * Crea (id = 0) o actualiza un punto.
-     * Devuelve false si el código QR ya lo usa otro punto.
-     */
+    /** Crea (id = 0) o actualiza un punto en ms-puntos y lo guarda en Room. false = QR repetido (409). */
     suspend fun guardarPunto(punto: PuntoInteres): Boolean {
-        val qr = punto.codigoQR.trim()
-        val existente = puntoDao.buscarPorQr(qr)
-        if (existente != null && existente.id != punto.id) return false
+        val limpio = punto.copy(codigoQR = punto.codigoQR.trim())
+        return try {
+            val guardado = if (limpio.id == 0) {
+                puntoApi.crear(limpio.aDto())
+            } else {
+                puntoApi.actualizar(limpio.id.toLong(), limpio.aDto())
+            }.aModelo()
 
-        if (punto.id == 0) {
+            val local = puntoDao.buscarPorId(guardado.id)
             puntoDao.insertar(
-                punto.copy(id = puntoDao.maxId() + 1, codigoQR = qr).toEntity()
+                guardado.copy(
+                    fueVisitado = local?.fueVisitado ?: false,
+                    selfieRuta = local?.selfieRuta,
+                    fechaVisita = local?.fechaVisita,
+                    altitudVisita = local?.altitudVisita
+                ).toEntity()
             )
-        } else {
-            puntoDao.actualizar(punto.copy(codigoQR = qr).toEntity())
+            true
+        } catch (e: HttpException) {
+            if (e.code() == 409) false else throw e
         }
-        return true
     }
 
     suspend fun eliminarPunto(id: Int) {
         val selfie = puntoDao.selfieActual(id)
+        try {
+            puntoApi.eliminar(id.toLong())
+        } catch (e: HttpException) {
+            if (e.code() != 404) throw e
+        }
         puntoDao.eliminar(id)
         ArchivosFoto.borrar(selfie)
+    }
+
+    /** Baja los puntos de ms-puntos y los guarda en Room sin perder visitas ni selfies. */
+    suspend fun sincronizarPuntos() {
+        val remotos = puntoApi.listar().map { it.aModelo() }
+        remotos.forEach { remoto ->
+            val local = puntoDao.buscarPorId(remoto.id)
+            puntoDao.insertar(
+                remoto.copy(
+                    fueVisitado = local?.fueVisitado ?: false,
+                    selfieRuta = local?.selfieRuta,
+                    fechaVisita = local?.fechaVisita,
+                    altitudVisita = local?.altitudVisita
+                ).toEntity()
+            )
+        }
+        val idsRemotos = remotos.map { it.id }.toSet()
+        puntoDao.observarPuntos().first()
+            .filter { it.id !in idsRemotos }
+            .forEach { puntoDao.eliminar(it.id) }
+    }
+
+    /** Baja el ranking de ms-jugadores y lo guarda en Room. */
+    suspend fun sincronizarRanking() {
+        val remoto = jugadorApi.ranking()
+        rankingDao.borrarTodo()
+        rankingDao.insertarTodos(remoto.map { RankingEntity(nombre = it.nombre, puntos = it.puntos) })
     }
 
     /** Solo se pueden eliminar Clientes; las cuentas en duro quedan protegidas. */
@@ -217,11 +287,16 @@ class PuntoRepository(
         val jugador = perfilDao.buscarPorId(id) ?: return
         if (jugador.rol != Rol.CLIENTE) return
 
+        try {
+            jugadorApi.eliminar(id.toLong())
+        } catch (e: HttpException) {
+            if (e.code() != 404) throw e
+        }
         perfilDao.eliminar(id)
         ArchivosFoto.borrar(jugador.fotoRuta)
     }
 
-    /** Edita nombre y correo de un Cliente. Devuelve false si el correo ya lo usa otro. */
+    /** Edita nombre y correo de un Cliente. Devuelve false si el correo o nombre ya los usa otro. */
     suspend fun actualizarJugador(
         id: Int,
         nombreUsuario: String,
@@ -230,6 +305,20 @@ class PuntoRepository(
         val actual = perfilDao.buscarPorId(id) ?: return false
         if (actual.rol != Rol.CLIENTE) return false
         if (perfilDao.contarPorEmail(email.trim(), id) > 0) return false
+
+        try {
+            jugadorApi.actualizar(
+                id.toLong(),
+                JugadorDto(
+                    nombreUsuario = nombreUsuario.trim(),
+                    email = email.trim(),
+                    telefono = actual.telefono,
+                    rol = actual.rol.name
+                )
+            )
+        } catch (e: HttpException) {
+            if (e.code() == 409) return false else throw e
+        }
 
         perfilDao.actualizar(
             actual.copy(
@@ -240,7 +329,7 @@ class PuntoRepository(
         return true
     }
 
-    /** Actualiza al jugador activo. Devuelve false si el correo ya lo usa otro jugador. */
+    /** Actualiza al jugador activo. Devuelve false si el correo o nombre ya los usa otro jugador. */
     suspend fun actualizarPerfil(
         nombreUsuario: String,
         email: String,
@@ -250,6 +339,20 @@ class PuntoRepository(
         val actual = perfilDao.buscarPorId(jugadorId) ?: return false
 
         if (perfilDao.contarPorEmail(email.trim(), jugadorId) > 0) return false
+
+        try {
+            jugadorApi.actualizar(
+                jugadorId.toLong(),
+                JugadorDto(
+                    nombreUsuario = nombreUsuario.trim(),
+                    email = email.trim(),
+                    telefono = actual.telefono,
+                    rol = actual.rol.name
+                )
+            )
+        } catch (e: HttpException) {
+            if (e.code() == 409) return false else throw e
+        }
 
         perfilDao.actualizar(
             actual.copy(
@@ -331,6 +434,7 @@ class PuntoRepository(
             altitud = altitudValida
         )
 
+        if (filasActualizadas > 0) enviarVisita(entidad.id)
         return if (filasActualizadas > 0) {
             ResultadoEscaneo.Exito(
                 entidad.copy(
@@ -365,6 +469,17 @@ class PuntoRepository(
 
         puntoDao.guardarSelfie(punto.id, ruta)
         return resultado to true
+    }
+
+    /** Avisa a ms-jugadores de la visita y actualiza el ranking. Si falla, la visita local se mantiene. */
+    private suspend fun enviarVisita(puntoId: Int) {
+        val jugadorId = sesionDao.sesionActual() ?: return
+        try {
+            jugadorApi.registrarVisita(jugadorId.toLong(), VisitaRequestDto(puntoId.toLong()))
+            sincronizarRanking()
+        } catch (_: HttpException) {
+        } catch (_: IOException) {
+        }
     }
 
     private fun distanciaEnMetros(

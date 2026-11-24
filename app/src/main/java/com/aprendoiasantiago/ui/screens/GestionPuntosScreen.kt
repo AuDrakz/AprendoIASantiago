@@ -407,8 +407,9 @@ private fun FormularioPuntoDialog(
 
                     var nuevo = base.copy(
                         conceptoIA = concepto.trim(),
-                        urlVideo = url.trim()
-                    )
+                        urlVideo = url.trim().let {
+                            if (it.startsWith("http://") || it.startsWith("https://")) it else "https://$it"
+                        }                    )
                     if (esAdmin) {
                         nuevo = nuevo.copy(
                             titulo = titulo.trim(),

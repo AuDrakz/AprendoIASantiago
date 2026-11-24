@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.aprendoiasantiago.repository.ResultadoRegistro
+import android.util.Log
 
 /** Sesión, selección de jugador y registro de nuevos Clientes. */
 class SesionViewModel(
@@ -62,10 +63,16 @@ class SesionViewModel(
     // --- Gestión de jugadores (solo Administrador) ---
 
     fun eliminarJugador(id: Int) {
-        viewModelScope.launch { repositorio.eliminarJugador(id) }
+        viewModelScope.launch {
+            try {
+                repositorio.eliminarJugador(id)
+            } catch (e: Exception) {
+                Log.e("SesionVM", "Error al eliminar jugador", e)
+            }
+        }
     }
 
-    /** onResultado(false) = el correo ya lo usa otro jugador. */
+    /** onResultado(false) = el correo o nombre ya lo usa otro jugador. */
     fun actualizarJugador(
         id: Int,
         nombre: String,
@@ -73,7 +80,13 @@ class SesionViewModel(
         onResultado: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
-            onResultado(repositorio.actualizarJugador(id, nombre, email))
+            val ok = try {
+                repositorio.actualizarJugador(id, nombre, email)
+            } catch (e: Exception) {
+                Log.e("SesionVM", "Error al actualizar jugador", e)
+                false
+            }
+            onResultado(ok)
         }
     }
 
@@ -127,15 +140,21 @@ class SesionViewModel(
         _registro.update { it.copy(guardando = true) }
 
         viewModelScope.launch {
-            val resultado = repositorio.registrarJugador(
-                nombre = f.nombre,
-                email = f.email,
-                avatar = f.avatar,
-                contrasena = f.contrasena
-            )
+            val resultado = try {
+                repositorio.registrarJugador(
+                    nombre = f.nombre,
+                    email = f.email,
+                    avatar = f.avatar,
+                    contrasena = f.contrasena
+                )
+            } catch (e: Exception) {
+                Log.e("SesionVM", "Error al registrar", e)
+                _registro.update { it.copy(guardando = false) }
+                return@launch
+            }
             when (resultado) {
                 ResultadoRegistro.EXITO ->
-                    _registro.value = RegistroUiState() // no deja la contraseña en memoria
+                    _registro.value = RegistroUiState()
                 ResultadoRegistro.CORREO_DUPLICADO ->
                     _registro.update {
                         it.copy(guardando = false, errorEmail = R.string.error_correo_duplicado)

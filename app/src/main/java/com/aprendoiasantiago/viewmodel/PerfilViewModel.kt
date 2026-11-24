@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import android.util.Log
 
 class PerfilViewModel(
     private val repositorio: PuntoRepository
@@ -81,7 +82,12 @@ class PerfilViewModel(
         if (!validarFormulario()) return
         val f = _formulario.value
         viewModelScope.launch {
-            val guardado = repositorio.actualizarPerfil(f.nombre, f.email, f.fotoRuta)
+            val guardado = try {
+                repositorio.actualizarPerfil(f.nombre, f.email, f.fotoRuta)
+            } catch (e: Exception) {
+                Log.e("PerfilVM", "Error al guardar perfil", e)
+                false
+            }
             if (guardado) {
                 onGuardado()
             } else {

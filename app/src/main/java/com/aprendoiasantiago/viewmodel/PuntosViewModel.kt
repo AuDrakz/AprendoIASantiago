@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import android.util.Log
+import retrofit2.HttpException
 
 class PuntosViewModel(
     private val repositorio: PuntoRepository
@@ -29,13 +31,17 @@ class PuntosViewModel(
     )
 
     init {
-        // importante este es el unico lugar donde se siembran los datos inciiales
-        // puntos, perfil y ranking. No repetir en otro ViewModel
-        // porque el ranking seria duplicado
-        viewModelScope.launch { repositorio.sembrarDatosIniciales() }
+        viewModelScope.launch {
+            repositorio.sembrarDatosIniciales()
+            try {
+                repositorio.sincronizarPuntos()
+                repositorio.sincronizarRanking()
+            } catch (_: Exception) {
+            }
+        }
     }
 
-   fun cambiarFiltro(nuevoFiltro: FiltroPuntos) {
+    fun cambiarFiltro(nuevoFiltro: FiltroPuntos) {
         filtro.value = nuevoFiltro
     }
 
@@ -45,12 +51,27 @@ class PuntosViewModel(
 
     // --- Gestión de puntos y cápsulas (Administrador / Creador de Contenido) ---
 
-    /** Crea (id = 0) o actualiza un punto. onResultado(false) = código QR repetido. */
+    /** Crea (id = 0) o actualiza un punto. onResultado(false) = no se pudo guardar. */
     fun guardarPunto(punto: PuntoInteres, onResultado: (Boolean) -> Unit) {
-        viewModelScope.launch { onResultado(repositorio.guardarPunto(punto)) }
+        viewModelScope.launch {
+            val ok = try {
+                repositorio.guardarPunto(punto)
+            } catch (e: Exception) {
+                val detalle = (e as? HttpException)?.response()?.errorBody()?.string()
+                Log.e("PuntosVM", "Error al guardar punto: $detalle | url=[${punto.urlVideo}]", e)
+                false
+            }
+            onResultado(ok)
+        }
     }
 
     fun eliminarPunto(id: Int) {
-        viewModelScope.launch { repositorio.eliminarPunto(id) }
+        viewModelScope.launch {
+            try {
+                repositorio.eliminarPunto(id)
+            } catch (e: Exception) {
+                Log.e("PuntosVM", "Error al eliminar punto", e)
+            }
+        }
     }
 }

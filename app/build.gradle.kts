@@ -73,6 +73,9 @@ dependencies {
     implementation(libs.androidx.compose.material3.window.size)
     implementation(libs.osmdroid.android)
     implementation(libs.coil.compose)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp)
 
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("androidx.media3:media3-exoplayer:1.11.1")

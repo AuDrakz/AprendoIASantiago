@@ -30,7 +30,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AprendoIASantiago">
+        android:theme="@style/Theme.AprendoIASantiago"
+        android:usesCleartextTraffic="true">
 
         <!-- Servicio para el seguimiento de ubicación GPS -->
         <service

@@ -11,7 +11,6 @@ artificial y suman puntos en un ranking.
 - Alan Ojeda
 - Nayeli Leiva
 - Luna Cortes
-- Sergio Carbajal
 
 ## Tecnologías
 - Kotlin y Jetpack Compose (Material 3)
