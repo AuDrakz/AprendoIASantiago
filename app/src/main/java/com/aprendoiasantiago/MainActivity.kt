@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.core.content.ContextCompat
 import com.aprendoiasantiago.data.local.AppDatabase
@@ -26,6 +27,7 @@ import com.aprendoiasantiago.viewmodel.PerfilViewModel
 import com.aprendoiasantiago.viewmodel.PuntosViewModel
 import com.aprendoiasantiago.viewmodel.SesionViewModel
 import android.view.View
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -57,6 +59,18 @@ class MainActivity : ComponentActivity() {
             if (ubicacionConcedida) {
                 iniciarServicioUbicacion()
             }
+
+            // NUEVO: el permiso llega después del primer intento de sincronización, así que se repite
+            if (permisos[PERMISO_RED_LOCAL] == true) {
+                lifecycleScope.launch {
+                    try {
+                        repositorio.sincronizarPuntos()
+                        repositorio.sincronizarRanking()
+                    } catch (e: Exception) {
+                        // sin conexión: la app sigue con lo guardado en Room
+                    }
+                }
+            }
         }
 
     private fun tienePermisoUbicacion(): Boolean {
@@ -73,19 +87,33 @@ class MainActivity : ComponentActivity() {
         return permisoFino || permisoAproximado
     }
 
+    // NUEVO: Android 17 (API 37) bloquea la red local por defecto, incluido el 10.0.2.2
+    // del emulador. Hace falta el permiso para que la app llegue al backend.
+    private fun necesitaPermisoRedLocal(): Boolean =
+        Build.VERSION.SDK_INT >= API_RED_LOCAL &&
+                ContextCompat.checkSelfPermission(this, PERMISO_RED_LOCAL) !=
+                PackageManager.PERMISSION_GRANTED
+
     private fun solicitarPermisosEIniciarServicio() {
-        if (tienePermisoUbicacion()) {
-            iniciarServicioUbicacion()
-            return
+        val permisos = mutableListOf<String>()
+
+        if (!tienePermisoUbicacion()) {
+            permisos.add(Manifest.permission.ACCESS_FINE_LOCATION)
+            permisos.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                permisos.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
 
-        val permisos = mutableListOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
+        // NUEVO
+        if (necesitaPermisoRedLocal()) {
+            permisos.add(PERMISO_RED_LOCAL)
+        }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permisos.add(Manifest.permission.POST_NOTIFICATIONS)
+        if (permisos.isEmpty()) {
+            iniciarServicioUbicacion()
+            return
         }
 
         solicitudPermisosUbicacion.launch(permisos.toTypedArray())
@@ -152,5 +180,11 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    // NUEVO
+    private companion object {
+        const val PERMISO_RED_LOCAL = "android.permission.ACCESS_LOCAL_NETWORK"
+        const val API_RED_LOCAL = 37
     }
 }

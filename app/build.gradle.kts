@@ -1,9 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     jacoco
 }
+
+// local.properties (no se sube a git): backend.host=192.168.1.50  -> IP del PC si pruebas en un teléfono físico
+val localProps = Properties().apply {
+    val archivo = rootProject.file("local.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+// 10.0.2.2 = el PC visto desde el emulador de Android
+val backendHost: String = localProps.getProperty("backend.host", "10.0.2.2")
+
+// Si el .jks no está en la carpeta app/, el release se genera sin firmar en vez de fallar
+val archivoJks = file("aprendoia-release.jks")
 
 android {
     namespace = "com.aprendoiasantiago"
@@ -19,14 +32,20 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // URLs base de los microservicios Spring Boot (deben terminar en "/")
+        buildConfigField("String", "BASE_URL_PUNTOS", "\"http://$backendHost:8081/\"")
+        buildConfigField("String", "BASE_URL_JUGADORES", "\"http://$backendHost:8082/\"")
     }
 
     signingConfigs {
         create("release") {
-            storeFile = file("aprendoia-release.jks")
-            storePassword = "aprendoia123"
-            keyAlias = "aprendoia"
-            keyPassword = "aprendoia123"
+            if (archivoJks.exists()) {
+                storeFile = archivoJks
+                storePassword = "aprendoia123"
+                keyAlias = "aprendoia"
+                keyPassword = "aprendoia123"
+            }
         }
     }
 
@@ -35,7 +54,9 @@ android {
             enableUnitTestCoverage = true
         }
         release {
-            signingConfig = signingConfigs.getByName("release")
+            if (archivoJks.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             optimization {
                 enable = false
             }
@@ -52,6 +73,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
